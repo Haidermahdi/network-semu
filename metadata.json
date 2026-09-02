@@ -1,0 +1,6 @@
+{
+  "name": "محاكي وشرح السويتشينغ والراوتينغ التفاعلي",
+  "description": "منصة تعليمية تفاعلية نابضة بالحياة لشرح مفاهيم السويتشينغ (Switching) والراوتينغ (Routing) بأمثلة واقعية ومحاكاة حية لحركة البيانات (Packet Flow) خطوة بخطوة.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
