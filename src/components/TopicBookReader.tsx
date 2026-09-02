@@ -1,31 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  BookOpen, 
-  ChevronRight, 
-  ChevronLeft, 
-  Bookmark, 
-  CheckCircle2, 
-  Sparkles, 
-  Layers, 
-  Terminal, 
-  ShieldAlert, 
-  HelpCircle, 
-  Clock, 
-  FileText, 
-  ZoomIn, 
-  ZoomOut, 
-  Award, 
-  Share2, 
-  ArrowLeft, 
-  ArrowRight,
+import {
+  BookOpen,
+  Bookmark,
+  CheckCircle2,
+  Sparkles,
+  Clock,
+  Award,
   Lightbulb,
-  ExternalLink,
-  Edit,
-  Save,
-  Check
+  ArrowLeft,
+  ArrowRight,
+  Check,
 } from 'lucide-react';
 import { CurriculumTopic, Language, BookChapterPage, CiscoCliCommand } from '../types';
 import { MarkdownContent } from './MarkdownContent';
+import { ProgressBar, InfoCallout, HighlightGrid } from './ui/ContentDisplay';
 
 interface TopicBookReaderProps {
   topic: CurriculumTopic;
@@ -47,36 +35,19 @@ export const TopicBookReader: React.FC<TopicBookReaderProps> = ({
   isCompleted = false,
   onBookmarkToggle,
   isBookmarked = false,
-  savedNote = '',
-  onSaveNote,
   readPages = [],
-  onTogglePageRead
+  onTogglePageRead,
 }) => {
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [fontSize, setFontSize] = useState<'normal' | 'large' | 'xlarge'>('normal');
-  const [noteText, setNoteText] = useState(savedNote);
-  const [showNoteEditor, setShowNoteEditor] = useState(false);
-  const [noteSavedFeedback, setNoteSavedFeedback] = useState(false);
 
-  useEffect(() => {
-    setNoteText(savedNote);
-  }, [savedNote]);
+  useEffect(() => { setCurrentPageIndex(0); }, [topic.id]);
 
-  // Reset to first page when topic changes
-  useEffect(() => {
-    setCurrentPageIndex(0);
-  }, [topic.id]);
-
-  // Generate or retrieve multi-page book chapters
   const bookPages: BookChapterPage[] = useMemo(() => {
-    if (topic.bookPages && topic.bookPages.length > 0) {
-      return topic.bookPages;
-    }
+    if (topic.bookPages && topic.bookPages.length > 0) return topic.bookPages;
 
-    // Comprehensive dynamic synthesis into a structured 5-page Cisco textbook
     const pages: BookChapterPage[] = [];
 
-    // Page 1: Architecture & Theoretical Foundation
     pages.push({
       pageNumber: 1,
       chapterTitleAr: 'الفصل الأول: البنية المعمارية والمفاهيم التأسيسية العميقة',
@@ -99,12 +70,11 @@ ${topic.contentMarkdownAr}
       keyTakeawaysAr: [
         `فهم الهدف المعماري للتقنية وسياقها في امتحان ${topic.level}.`,
         'الربط بين المعايير القياسية والتشغيل الفعلي على عتاد سيسكو.',
-        'التعرف على الفروق الجوهرية مقارنة بالتقنيات والبروتوكولات السابقة.'
+        'التعرف على الفروق الجوهرية مقارنة بالتقنيات والبروتوكولات السابقة.',
       ],
-      ciscoTipAr: 'يركز امتحان سيسكو على فهم السيناريوهات التي تستدعي تفعيل هذه التقنية مقارنة بالبدائل المتاحة.'
+      ciscoTipAr: 'يركز امتحان سيسكو على فهم السيناريوهات التي تستدعي تفعيل هذه التقنية مقارنة بالبدائل المتاحة.',
     });
 
-    // Page 2: Bit-Level Packet Dissection & Mathematics
     pages.push({
       pageNumber: 2,
       chapterTitleAr: 'الفصل الثاني: التشريح الدقيق للترويسة والرياضيات الثنائية',
@@ -120,7 +90,7 @@ ${topic.protocolDetails && topic.protocolDetails.length > 0 ? `
 ${topic.protocolDetails[0].headerStructure.map(h => `- **${h.field} (${h.bits} Bits):** ${h.descAr}`).join('\n')}
 ` : `
 #### 📐 القواعد الرياضية والهندسية:
-- **المعادلات الحسابية:** تخضع كافة العمليات لقوانين البتات الرياضية الصارمة، مثل حسابات الإزاحة، أقنعة الشبكات الفرعية، وأوزان القياس المترية.
+- **المعادلات الحسابية:** تخضع كافة العمليات لقوانين البتات الرياضية الصارمة.
 - **الاستقرار الرياضي:** تعتمد خوارزميات سيسكو على معادلات متوازنة تمنع التذبذب وتقصر زمن التقارب (Convergence Time).
 `}
 
@@ -134,12 +104,11 @@ ${topic.protocolDetails[0].headerStructure.map(h => `- **${h.field} (${h.bits} B
       keyTakeawaysAr: [
         'معرفة أحجام الحقول بالبتات ووظيفة كل حقل في الترويسة.',
         'القدرة على تطبيق القوانين الرياضية والحسابية دون أخطاء.',
-        'فهم كيفية تخزين ومعالجة الترويسات في ذاكرة TCAM.'
+        'فهم كيفية تخزين ومعالجة الترويسات في ذاكرة TCAM.',
       ],
-      ciscoTipAr: 'احفظ أطوال الترويسات القياسية بالبايت، حيث تتكرر أسئلة مقارنة الأحجام في الامتحانات الدولية.'
+      ciscoTipAr: 'احفظ أطوال الترويسات القياسية بالبايت، حيث تتكرر أسئلة مقارنة الأحجام في الامتحانات الدولية.',
     });
 
-    // Page 3: Real Configuration & Show Command Matrix
     pages.push({
       pageNumber: 3,
       chapterTitleAr: 'الفصل الثالث: التكوين العملي وأوامر التحقق في Cisco IOS',
@@ -178,12 +147,11 @@ Router(config-if)# no shutdown
       keyTakeawaysAr: [
         'إتقان كتابة الأوامر بالصيغة الهندسية الصحيحة.',
         'قراءة وتحليل مخرجات أوامر show لاستخلاص حالة الشبكة.',
-        'التمييز بين وضع التكوين العام (Global Config) وأوضاع الواجهات والموجهات.'
+        'التمييز بين وضع التكوين العام (Global Config) وأوضاع الواجهات والموجهات.',
       ],
-      ciscoTipAr: 'في أسئلة المختبرات العملية (Simulations)، تحقق دائماً من نتيجة كل أمر تكتبه عبر أمر show المقابل.'
+      ciscoTipAr: 'في أسئلة المختبرات العملية (Simulations)، تحقق دائماً من نتيجة كل أمر تكتبه عبر أمر show المقابل.',
     });
 
-    // Page 4: Troubleshooting & TAC Diagnostic Scenarios
     pages.push({
       pageNumber: 4,
       chapterTitleAr: 'الفصل الرابع: استكشاف الأعطال وتشخيصات دعم سيسكو TAC',
@@ -209,12 +177,11 @@ Router(config-if)# no shutdown
       keyTakeawaysAr: [
         'معرفة الأسباب الأكثر شيوعاً لفشل التقنية في الواقع العملي.',
         'استخدام منهجية عزل الطبقات لحل المشكلات بسرعة.',
-        'تجنب الأخطاء الكارثية في أوامر debug داخل شبكات الشركات.'
+        'تجنب الأخطاء الكارثية في أوامر debug داخل شبكات الشركات.',
       ],
-      ciscoTipAr: 'عند حدوث خلل، ابدأ دائماً بالتحقق من الطبقة الأولى والثانية (Layer 1/2) قبل البحث في توجيه الطبقة الثالثة.'
+      ciscoTipAr: 'عند حدوث خلل، ابدأ دائماً بالتحقق من الطبقة الأولى والثانية (Layer 1/2) قبل البحث في توجيه الطبقة الثالثة.',
     });
 
-    // Page 5: Official Exam Blueprint & Quick Reference
     pages.push({
       pageNumber: 5,
       chapterTitleAr: 'الفصل الخامس: ورقة المرجع السريع واستراتيجيات اجتياز الامتحان',
@@ -237,9 +204,9 @@ ${(topic.technicalHighlights || []).map(h => `- ✅ **${h}**`).join('\n')}
       keyTakeawaysAr: [
         'مراجعة سريعة لأهم الأرقام والقيم الثابتة.',
         'تثبيت الفروق الدقيقة قبل دخول قاعة الامتحان.',
-        'امتلاك ثقة هندسية عالية في حل المسائل النظرية والعملية.'
+        'امتلاك ثقة هندسية عالية في حل المسائل النظرية والعملية.',
       ],
-      ciscoTipAr: 'اقرأ أسئلة الامتحان بالكامل حتى آخر كلمة، فغالباً ما تغير كلمة استثناء واحدة الإجابة الصحيحة بالكامل.'
+      ciscoTipAr: 'اقرأ أسئلة الامتحان بالكامل حتى آخر كلمة، فغالباً ما تغير كلمة استثناء واحدة الإجابة الصحيحة بالكامل.',
     });
 
     return pages;
@@ -248,26 +215,7 @@ ${(topic.technicalHighlights || []).map(h => `- ✅ **${h}**`).join('\n')}
   const currentPage = bookPages[currentPageIndex] || bookPages[0];
   const totalPages = bookPages.length;
   const isCurrentPageRead = readPages.includes(currentPage.pageNumber);
-
-  const nextPage = () => {
-    if (currentPageIndex < totalPages - 1) {
-      setCurrentPageIndex(prev => prev + 1);
-    }
-  };
-
-  const prevPage = () => {
-    if (currentPageIndex > 0) {
-      setCurrentPageIndex(prev => prev - 1);
-    }
-  };
-
-  const handleSaveNote = () => {
-    if (onSaveNote) {
-      onSaveNote(topic.id, noteText);
-      setNoteSavedFeedback(true);
-      setTimeout(() => setNoteSavedFeedback(false), 2000);
-    }
-  };
+  const readCount = readPages.length;
 
   const getTextSizeClass = () => {
     if (fontSize === 'large') return 'text-base sm:text-lg';
@@ -276,279 +224,220 @@ ${(topic.technicalHighlights || []).map(h => `- ✅ **${h}**`).join('\n')}
   };
 
   return (
-    <div className="space-y-6">
-      {/* LUXURY DIGITAL BOOK CONTAINER */}
-      <div 
-        className="rounded-3xl bg-gradient-to-b from-slate-900 via-[#0b1222] to-slate-950 border border-slate-700/80 shadow-2xl overflow-hidden text-right font-sans"
-        dir="rtl"
-      >
-        {/* BOOK HEADER BAR */}
-        <div className="px-6 py-4 bg-slate-950/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2.5 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shrink-0">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[10px] font-bold font-mono">
-                  {topic.ciscoBlueprintRef}
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-[10px] font-bold">
-                  كتاب سيسكو التفاعلي المعتمد
-                </span>
-              </div>
-              <h2 className="text-base sm:text-lg font-black text-white truncate mt-1">
-                {topic.titleAr}
-              </h2>
-            </div>
-          </div>
-
-          {/* Reader Controls */}
+    <div className="space-y-4">
+      {/* Reading Progress */}
+      <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            {/* Font size toggles */}
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
-              <button
-                onClick={() => setFontSize('normal')}
-                className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${fontSize === 'normal' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
-                title="حجم خط قياسي"
-              >
-                A
-              </button>
-              <button
-                onClick={() => setFontSize('large')}
-                className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${fontSize === 'large' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
-                title="حجم خط كبير"
-              >
-                A+
-              </button>
-              <button
-                onClick={() => setFontSize('xlarge')}
-                className={`px-2 py-1 rounded-lg text-sm font-bold transition-colors cursor-pointer ${fontSize === 'xlarge' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
-                title="حجم خط موسع"
-              >
-                A++
-              </button>
+            <BookOpen className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-bold text-white">{topic.titleAr}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 p-0.5 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+              {(['normal', 'large', 'xlarge'] as const).map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setFontSize(size)}
+                  className={`px-2 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${
+                    fontSize === size ? 'bg-amber-500/20 text-amber-300' : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  {size === 'normal' ? 'A' : size === 'large' ? 'A+' : 'A++'}
+                </button>
+              ))}
             </div>
-
-            {/* Bookmark button */}
             {onBookmarkToggle && (
               <button
                 onClick={() => onBookmarkToggle(topic.id)}
-                className={`p-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  isBookmarked
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                    : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                className={`p-2 rounded-lg border transition-all cursor-pointer ${
+                  isBookmarked ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-white/[0.03] text-slate-500 border-white/[0.06]'
                 }`}
-                title={isBookmarked ? 'إلغاء التفضيل' : 'حفظ كمرجع مفضل'}
               >
-                <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-amber-400 text-amber-400' : ''}`} />
-                <span className="hidden sm:inline">{isBookmarked ? 'مفضل' : 'حفظ'}</span>
+                <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-amber-400' : ''}`} />
               </button>
             )}
-
-            {/* Topic completed toggle */}
             {onMarkTopicCompleted && (
               <button
                 onClick={() => onMarkTopicCompleted(topic.id)}
-                className={`p-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  isCompleted
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                    : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                className={`p-2 rounded-lg border transition-all cursor-pointer ${
+                  isCompleted ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-white/[0.03] text-slate-500 border-white/[0.06]'
                 }`}
-                title={isCompleted ? 'مكتمل' : 'تعليم كمكتمل'}
               >
-                <CheckCircle2 className={`w-4 h-4 ${isCompleted ? 'text-emerald-400' : ''}`} />
-                <span className="hidden sm:inline">{isCompleted ? 'مكتمل' : 'إتمام'}</span>
+                <CheckCircle2 className="w-4 h-4" />
               </button>
             )}
           </div>
         </div>
+        <ProgressBar
+          value={readCount}
+          max={totalPages}
+          label={lang === 'ar' ? `تقدم القراءة — ${readCount}/${totalPages} صفحات` : `Reading Progress — ${readCount}/${totalPages} pages`}
+        />
+      </div>
 
-        {/* BOOK CHAPTER TABS (TABLE OF CONTENTS) */}
-        <div className="px-6 py-2.5 bg-slate-950/60 border-b border-slate-800/80 overflow-x-auto">
-          <div className="flex items-center gap-2 min-w-max">
-            {bookPages.map((page, idx) => {
-              const isPageActive = idx === currentPageIndex;
-              const isPageRead = readPages.includes(page.pageNumber);
-              return (
-                <button
-                  key={page.pageNumber}
-                  onClick={() => setCurrentPageIndex(idx)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
-                    isPageActive
-                      ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'bg-slate-900/90 text-slate-400 hover:text-slate-200 border border-slate-800/80'
-                  }`}
-                >
-                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-mono ${isPageActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                    {page.pageNumber}
-                  </span>
-                  <span>{page.badgeAr}</span>
-                  {isPageRead && (
-                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  )}
-                </button>
-              );
-            })}
+      {/* Book Layout: Chapter Stepper + Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+        {/* Chapter Navigation */}
+        <div className="lg:col-span-3 space-y-1 p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 mb-2">
+            {lang === 'ar' ? 'فصول الكتاب' : 'Chapters'}
           </div>
-        </div>
-
-        {/* BOOK PAGE CONTENT BODY */}
-        <div className="p-6 sm:p-8 space-y-6">
-          {/* Chapter Subheader */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800/80">
-            <div>
-              <div className="text-xs text-indigo-400 font-bold flex items-center gap-2">
-                <span>{currentPage.badgeAr}</span>
-                <span className="text-slate-600">•</span>
-                <span className="flex items-center gap-1 text-slate-400">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>وقت القراءة التقديري: {currentPage.estimatedReadTime}</span>
-                </span>
-              </div>
-              <h3 className="text-base sm:text-lg font-black text-white mt-1">
-                {currentPage.chapterTitleAr}
-              </h3>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-cyan-400 bg-cyan-950/60 px-2.5 py-1 rounded-lg border border-cyan-800/40">
-                صفحة {currentPage.pageNumber} من {totalPages}
-              </span>
-
-              {onTogglePageRead && (
-                <button
-                  onClick={() => onTogglePageRead(topic.id, currentPage.pageNumber)}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                    isCurrentPageRead
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200'
-                  }`}
-                >
-                  <Check className={`w-3.5 h-3.5 ${isCurrentPageRead ? 'text-emerald-400' : ''}`} />
-                  <span>{isCurrentPageRead ? 'تمت قراءة هذه الصفحة' : 'تعليم كمقروء'}</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Core Markdown Textbook Body */}
-          <div className={`book-text-body ${getTextSizeClass()} leading-relaxed`}>
-            <MarkdownContent content={currentPage.contentMarkdownAr} lang={lang} />
-          </div>
-
-          {/* Chapter Cisco Golden Tip */}
-          {currentPage.ciscoTipAr && (
-            <div className="p-4 rounded-2xl bg-amber-950/30 border border-amber-500/30 flex items-start gap-3 shadow-inner">
-              <Lightbulb className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-xs font-bold text-amber-300 mb-1">
-                  نصيحة ذهبية لمهندسي سيسكو (Cisco Engineering Tip):
-                </h4>
-                <p className="text-xs text-amber-200/90 leading-relaxed">
-                  {currentPage.ciscoTipAr}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Chapter Key Takeaways */}
-          {currentPage.keyTakeawaysAr && currentPage.keyTakeawaysAr.length > 0 && (
-            <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2.5">
-              <h4 className="text-xs font-bold text-cyan-300 flex items-center gap-2">
-                <Award className="w-4 h-4 text-cyan-400" />
-                <span>أهم مخرجات التعلم في هذه الصفحة:</span>
-              </h4>
-              <ul className="space-y-1.5 pr-2">
-                {currentPage.keyTakeawaysAr.map((item, idx) => (
-                  <li key={idx} className="text-xs text-slate-300 flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0 mt-1.5" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-
-        {/* BOOK FOOTER NAVIGATION BAR */}
-        <div className="px-6 py-4 bg-slate-950/90 border-t border-slate-800 flex items-center justify-between gap-4">
-          <button
-            onClick={prevPage}
-            disabled={currentPageIndex === 0}
-            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs font-bold flex items-center gap-2 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
-          >
-            <ArrowRight className="w-4 h-4" />
-            <span>الصفحة السابقة</span>
-          </button>
-
-          {/* Progress bar dots */}
-          <div className="flex items-center gap-1.5">
-            {bookPages.map((_, idx) => (
+          {bookPages.map((page, idx) => {
+            const isActive = idx === currentPageIndex;
+            const isRead = readPages.includes(page.pageNumber);
+            return (
               <button
-                key={idx}
+                key={page.pageNumber}
                 onClick={() => setCurrentPageIndex(idx)}
-                className={`h-2 rounded-full transition-all cursor-pointer ${
-                  idx === currentPageIndex
-                    ? 'w-6 bg-cyan-400'
-                    : readPages.includes(idx + 1)
-                    ? 'w-2 bg-emerald-500'
-                    : 'w-2 bg-slate-800 hover:bg-slate-700'
+                className={`w-full flex items-center gap-2.5 p-2.5 rounded-xl text-right transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-amber-500/15 border border-amber-500/30'
+                    : 'hover:bg-white/[0.04] border border-transparent'
                 }`}
-                title={`انتقال للصفحة ${idx + 1}`}
-              />
-            ))}
+              >
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${
+                  isActive ? 'bg-amber-500 text-black' : isRead ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/[0.06] text-slate-500'
+                }`}>
+                  {isRead && !isActive ? '✓' : page.pageNumber}
+                </div>
+                <div className="min-w-0">
+                  <div className={`text-[11px] font-bold truncate ${isActive ? 'text-amber-300' : isRead ? 'text-emerald-400' : 'text-slate-400'}`}>
+                    {page.badgeAr}
+                  </div>
+                  <div className="text-[10px] text-slate-600 flex items-center gap-1 mt-0.5">
+                    <Clock className="w-2.5 h-2.5" />
+                    {page.estimatedReadTime}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Page Content */}
+        <div className="lg:col-span-9 space-y-4">
+          <div className="p-5 sm:p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-5">
+            {/* Chapter Header */}
+            <div className="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-white/[0.06]">
+              <div>
+                <div className="flex items-center gap-2 text-[11px] text-amber-400 font-bold">
+                  <span>{currentPage.badgeAr}</span>
+                  <span className="text-slate-600">•</span>
+                  <span className="flex items-center gap-1 text-slate-500">
+                    <Clock className="w-3 h-3" />
+                    {currentPage.estimatedReadTime}
+                  </span>
+                </div>
+                <h3 className="text-base font-black text-white mt-1.5 leading-snug">
+                  {currentPage.chapterTitleAr}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono text-amber-400/80 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                  {currentPage.pageNumber} / {totalPages}
+                </span>
+                {onTogglePageRead && (
+                  <button
+                    onClick={() => onTogglePageRead(topic.id, currentPage.pageNumber)}
+                    className={`px-3 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                      isCurrentPageRead
+                        ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                        : 'bg-white/[0.04] text-slate-400 border border-white/[0.06] hover:text-slate-200'
+                    }`}
+                  >
+                    <Check className="w-3 h-3" />
+                    {isCurrentPageRead ? (lang === 'ar' ? 'مقروء' : 'Read') : (lang === 'ar' ? 'تعليم مقروء' : 'Mark read')}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Markdown Body */}
+            <div className={`book-text-body ${getTextSizeClass()} leading-relaxed`}>
+              <MarkdownContent content={currentPage.contentMarkdownAr} lang={lang} />
+            </div>
+
+            {/* Cisco Tip */}
+            {currentPage.ciscoTipAr && (
+              <InfoCallout
+                title={lang === 'ar' ? 'نصيحة ذهبية لمهندسي سيسكو' : 'Cisco Engineering Tip'}
+                icon={<Lightbulb className="w-4 h-4" />}
+              >
+                {currentPage.ciscoTipAr}
+              </InfoCallout>
+            )}
+
+            {/* Key Takeaways */}
+            {currentPage.keyTakeawaysAr && currentPage.keyTakeawaysAr.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-cyan-300 flex items-center gap-2">
+                  <Award className="w-4 h-4 text-cyan-400" />
+                  {lang === 'ar' ? 'أهم مخرجات التعلم' : 'Key Learning Outcomes'}
+                </h4>
+                <HighlightGrid
+                  items={currentPage.keyTakeawaysAr.map(t => ({ text: t }))}
+                  columns={1}
+                />
+              </div>
+            )}
           </div>
 
-          <button
-            onClick={nextPage}
-            disabled={currentPageIndex === totalPages - 1}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-bold flex items-center gap-2 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer shadow-md"
-          >
-            <span>الصفحة التالية</span>
-            <ArrowLeft className="w-4 h-4" />
-          </button>
+          {/* Page Navigation */}
+          <div className="flex items-center justify-between gap-3">
+            <button
+              onClick={() => setCurrentPageIndex(prev => Math.max(0, prev - 1))}
+              disabled={currentPageIndex === 0}
+              className="px-4 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-slate-300 text-xs font-bold flex items-center gap-2 disabled:opacity-30 cursor-pointer transition-all"
+            >
+              <ArrowRight className="w-4 h-4" />
+              {lang === 'ar' ? 'السابق' : 'Previous'}
+            </button>
+
+            <div className="flex items-center gap-1.5">
+              {bookPages.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentPageIndex(idx)}
+                  className={`h-2 rounded-full transition-all cursor-pointer ${
+                    idx === currentPageIndex ? 'w-6 bg-amber-400' : readPages.includes(idx + 1) ? 'w-2 bg-emerald-500' : 'w-2 bg-white/[0.1] hover:bg-white/20'
+                  }`}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={() => setCurrentPageIndex(prev => Math.min(totalPages - 1, prev + 1))}
+              disabled={currentPageIndex === totalPages - 1}
+              className="px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-2 disabled:opacity-30 cursor-pointer transition-all"
+            >
+              {lang === 'ar' ? 'التالي' : 'Next'}
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* COMPREHENSIVE EXECUTIVE SUMMARY (أسفل الكتاب كما طلب المستخدم) */}
-      <div 
-        className="rounded-3xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 p-6 sm:p-8 space-y-4 text-right font-sans shadow-xl"
-        dir="rtl"
-      >
-        <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
-          <div className="p-2.5 rounded-2xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-            <Sparkles className="w-5 h-5" />
+      {/* Executive Summary */}
+      <div className="p-5 rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.06] space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-cyan-500/15 border border-cyan-500/25">
+            <Sparkles className="w-4 h-4 text-cyan-400" />
           </div>
           <div>
-            <h3 className="text-base font-black text-white flex items-center gap-2">
-              <span>ملخص الموضوع التنفيذي الشامل (Topic Executive Summary)</span>
+            <h3 className="text-sm font-black text-white">
+              {lang === 'ar' ? 'ملخص الموضوع التنفيذي' : 'Topic Executive Summary'}
             </h3>
-            <p className="text-xs text-slate-400">
-              خلاصة المرجع السريع وأهم النقاط الأساسية الخاصة بـ {topic.titleAr}
-            </p>
+            <p className="text-[11px] text-slate-500">{topic.titleAr}</p>
           </div>
         </div>
-
-        <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-sans">
-          {topic.summaryAr || `يمثل موضوع ${topic.titleAr} (${topic.ciscoBlueprintRef}) حجر الأساس لشهادة سيسكو الرسمية. يضمن التطبيق السليم لهذه التقنية بناء شبكات عالية الموثوقية والأداء، مع سرعة استجابة فائقة وخلو من حلقات التكرار والاختناقات الأمنية.`}
+        <p className="text-xs text-slate-300 leading-relaxed">
+          {topic.summaryAr || `يمثل موضوع ${topic.titleAr} (${topic.ciscoBlueprintRef}) حجر الأساس لشهادة سيسكو الرسمية.`}
         </p>
-
-        {/* Technical Highlights list */}
         {topic.technicalHighlights && topic.technicalHighlights.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-slate-800/80">
-            <h4 className="text-xs font-bold text-cyan-300 mb-2.5">
-              أهم الركائز التقنية المعتمدة في هذا الموضوع:
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {topic.technicalHighlights.map((hl, idx) => (
-                <div key={idx} className="p-3 rounded-xl bg-slate-950/80 border border-slate-800/90 flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span className="text-xs text-slate-300 leading-relaxed font-sans">{hl}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <HighlightGrid
+            items={topic.technicalHighlights.map(h => ({ text: h }))}
+            columns={2}
+          />
         )}
       </div>
     </div>

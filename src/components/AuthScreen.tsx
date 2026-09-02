@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Network, 
   Mail, 
   KeyRound, 
   ShieldCheck, 
@@ -187,18 +186,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       {/* Top Header */}
       <header className="relative z-10 max-w-7xl w-full mx-auto p-4 sm:p-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-indigo-600 via-cyan-500 to-emerald-400 text-slate-950 shadow-lg shadow-indigo-500/30">
-            <Network className="w-6 h-6 stroke-[2.5]" />
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 via-amber-600 to-orange-700 flex items-center justify-center shadow-lg shadow-amber-900/40">
+            <span className="text-xl font-black text-amber-50" style={{ fontFamily: 'serif' }}>𒀭</span>
           </div>
           <div>
             <h1 className="text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
-              <span>{lang === 'ar' ? 'أكاديمية المنظومة الهندسية للشبكات' : 'Cisco Enterprise Network Academy'}</span>
-              <span className="px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold font-mono">
-                CISCO OCG • RFC
+              <span>{lang === 'ar' ? 'منصة الفريق السومري للتعلم' : 'Sumerian Team Learning Platform'}</span>
+              <span className="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/25 text-[10px] font-bold font-mono">
+                CCNA • CCNP • CCIE
               </span>
             </h1>
             <p className="text-xs text-slate-400 hidden sm:block">
-              {lang === 'ar' ? 'بوابة التأهيل الاحترافي لشهادات CCNA و CCNP و CCIE' : 'Official Academic Engineering & Digital Books Portal'}
+              {lang === 'ar' ? 'منصة تعليمية احترافية لهندسة الشبكات والشهادات المعتمدة' : 'Professional educational platform for network engineering & certifications'}
             </p>
           </div>
         </div>
@@ -219,9 +218,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           
           {/* Left Column: Platform Features & Value Proposition */}
           <div className="lg:col-span-7 space-y-6">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/10 to-cyan-500/10 border border-indigo-500/30 text-xs font-bold text-cyan-300">
-              <Sparkles className="w-4 h-4 text-cyan-400" />
-              <span>{lang === 'ar' ? 'بوابة الدخول والتحقق الهندسي الموحدة' : 'Official Cisco Certified Learning Environment'}</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/25 text-xs font-bold text-amber-300">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>{lang === 'ar' ? 'بوابة الدخول إلى منصة الفريق السومري للتعلم' : 'Gateway to Sumerian Team Learning Platform'}</span>
             </div>
 
             <div className="space-y-3">
@@ -593,8 +592,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       <footer className="relative z-10 max-w-7xl w-full mx-auto p-4 sm:p-6 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
         <div>
           {lang === 'ar' 
-            ? '© المنظومة الهندسية للشبكات المعتمدة من سيسكو - جميع المعايير مطابقة لمناهج OCG و RFC'
-            : '© Cisco Enterprise Network Academy - Built strictly according to Official Cisco Press OCG & RFC Standards'}
+            ? '© منصة الفريق السومري للتعلم — جميع المعايير مطابقة لمناهج سيسكو الرسمية و RFC'
+            : '© Sumerian Team Learning Platform — Built according to Official Cisco OCG & RFC Standards'}
         </div>
         <div className="flex items-center gap-4 text-slate-400 font-mono text-[11px]">
           <span>RFC Compliant</span>
