@@ -12,6 +12,8 @@ import {
   FileText,
   Lightbulb,
   GraduationCap,
+  Sidebar,
+  Maximize2,
 } from 'lucide-react';
 import { ALL_CURRICULUM_TRACKS } from '../data/ciscoCurriculumData';
 import { CurriculumTrack, Language, UserProfile } from '../types';
@@ -51,6 +53,7 @@ export const CurriculumViewer: React.FC<CurriculumViewerProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [activeTopicTab, setActiveTopicTab] = useState<TopicTab>('book');
+  const [isTopicsSidebarOpen, setIsTopicsSidebarOpen] = useState<boolean>(true);
 
   const activeTrackInfo = ALL_CURRICULUM_TRACKS[selectedTrack];
   const units = activeTrackInfo.sections;
@@ -205,20 +208,35 @@ export const CurriculumViewer: React.FC<CurriculumViewerProps> = ({
       {/* ── Main Layout ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* Units Sidebar */}
-        <div className="lg:col-span-4 space-y-3">
-          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-3">
-            <div className="relative">
-              <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={lang === 'ar' ? 'بحث في المواضيع...' : 'Search topics...'}
-                className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-amber-500/40 transition-colors"
-              />
-            </div>
+        {isTopicsSidebarOpen && (
+          <div className="lg:col-span-4 space-y-3">
+            <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-3">
+              <div className="flex items-center justify-between gap-2 pb-1">
+                <span className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{lang === 'ar' ? 'فهرس الوحدات والمواضيع' : 'Units & Topics'}</span>
+                </span>
+                <button
+                  onClick={() => setIsTopicsSidebarOpen(false)}
+                  className="p-1.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] text-slate-400 hover:text-white text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer"
+                  title={lang === 'ar' ? 'إخفاء الفهرس لتوسيع مساحة القراءة' : 'Collapse to expand reading canvas'}
+                >
+                  <Sidebar className="w-3 h-3 text-amber-400" />
+                  <span className="hidden sm:inline">{lang === 'ar' ? 'إخفاء' : 'Collapse'}</span>
+                </button>
+              </div>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={lang === 'ar' ? 'بحث في المواضيع...' : 'Search topics...'}
+                  className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-amber-500/40 transition-colors"
+                />
+              </div>
 
-            <div className="space-y-2 max-h-[600px] overflow-y-auto sidebar-scroll">
+              <div className="space-y-2 max-h-[600px] overflow-y-auto sidebar-scroll">
               {searchQuery.trim() ? (
                 units.flatMap((u, uIdx) =>
                   u.topics.map((t, tIdx) => {
@@ -304,9 +322,10 @@ export const CurriculumViewer: React.FC<CurriculumViewerProps> = ({
             </div>
           </div>
         </div>
+      )}
 
         {/* Topic Content */}
-        <div className="lg:col-span-8 space-y-4">
+        <div className={`${isTopicsSidebarOpen ? 'lg:col-span-8' : 'lg:col-span-12'} space-y-4`}>
           {currentTopic ? (
             <>
               {/* Topic Hero */}
@@ -329,6 +348,22 @@ export const CurriculumViewer: React.FC<CurriculumViewerProps> = ({
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setIsTopicsSidebarOpen(!isTopicsSidebarOpen)}
+                      className={`px-3 py-2 rounded-xl border font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                        !isTopicsSidebarOpen
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 ring-1 ring-amber-500/20'
+                          : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.08]'
+                      }`}
+                      title={isTopicsSidebarOpen ? (lang === 'ar' ? 'إخفاء الفهرس وتوسيع مساحة القراءة' : 'Collapse Sidebar') : (lang === 'ar' ? 'إظهار فهرس المواضيع' : 'Show Topics')}
+                    >
+                      <Sidebar className="w-3.5 h-3.5 text-amber-400" />
+                      <span>
+                        {isTopicsSidebarOpen
+                          ? (lang === 'ar' ? 'توسيع العرض' : 'Expand')
+                          : (lang === 'ar' ? 'إظهار الفهرس' : 'Show Topics')}
+                      </span>
+                    </button>
                     {onNavigateToLab && (
                       <button
                         onClick={() => onNavigateToLab(getTopicLabScenarioId(currentTopic.id))}

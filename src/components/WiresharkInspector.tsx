@@ -11,9 +11,14 @@ import {
   Sliders
 } from 'lucide-react';
 import { WIRESHARK_TRACES } from '../data/wiresharkTraces';
-import { WiresharkFrame } from '../types';
+import { WiresharkFrame, Language } from '../types';
 
-export const WiresharkInspector: React.FC = () => {
+interface WiresharkInspectorProps {
+  lang?: Language;
+}
+
+export const WiresharkInspector: React.FC<WiresharkInspectorProps> = ({ lang = 'ar' }) => {
+  const isEn = lang === 'en';
   const [selectedTraceKey, setSelectedTraceKey] = useState<string>('ospf-hello');
   const [selectedFrameIndex, setSelectedFrameIndex] = useState<number>(0);
   const [expandedLayers, setExpandedLayers] = useState<Record<string, boolean>>({
@@ -34,12 +39,14 @@ export const WiresharkInspector: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 font-sans">
+    <div className={`space-y-4 font-sans ${isEn ? 'dir-ltr text-left' : 'dir-rtl text-right'}`}>
       {/* Top Protocol Filter & Scenario Ribbon */}
       <div className="p-3 bg-slate-900/90 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow-lg">
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-cyan-400" />
-          <span className="text-xs font-bold text-slate-300">مكتبة حزم Wireshark المسجلة (PCAP Traces):</span>
+          <span className="text-xs font-bold text-slate-300">
+            {isEn ? 'Wireshark Captured Packet Traces (PCAP):' : 'مكتبة حزم Wireshark المسجلة (PCAP Traces):'}
+          </span>
         </div>
 
         <div className="flex gap-2">
@@ -54,7 +61,7 @@ export const WiresharkInspector: React.FC = () => {
                 : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
             }`}
           >
-            حزمة OSPFv2 Hello (Protocol 89)
+            {isEn ? 'OSPFv2 Hello Packet (Protocol 89)' : 'حزمة OSPFv2 Hello (Protocol 89)'}
           </button>
 
           <button
@@ -68,7 +75,7 @@ export const WiresharkInspector: React.FC = () => {
                 : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
             }`}
           >
-            فريم IEEE 802.1Q Tagged (VLAN Trunk)
+            {isEn ? 'IEEE 802.1Q Tagged Frame (VLAN Trunk)' : 'فريم IEEE 802.1Q Tagged (VLAN Trunk)'}
           </button>
         </div>
       </div>
@@ -158,9 +165,9 @@ export const WiresharkInspector: React.FC = () => {
                           <span className="text-slate-400">{f.key}:</span>
                           <span className="text-cyan-200 font-semibold">{f.value}</span>
                         </div>
-                        {f.annotationAr && (
-                          <span className="px-2 py-0.5 rounded bg-indigo-950/70 border border-indigo-500/30 text-indigo-300 text-[10px] font-sans dir-rtl text-right">
-                            {f.annotationAr}
+                        {(f.annotationEn || f.annotationAr) && (
+                          <span className={`px-2 py-0.5 rounded bg-indigo-950/70 border border-indigo-500/30 text-indigo-300 text-[10px] font-sans ${isEn ? 'dir-ltr text-left' : 'dir-rtl text-right'}`}>
+                            {isEn && f.annotationEn ? f.annotationEn : f.annotationAr}
                           </span>
                         )}
                       </div>

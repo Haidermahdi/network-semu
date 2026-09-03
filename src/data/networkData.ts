@@ -5,13 +5,14 @@ export const INITIAL_NETWORK_NODES: NetworkNode[] = [
   {
     id: 'host-a',
     name: 'Host A (كمبيوتر أحمد)',
+    nameEn: 'Host A (Source Workstation)',
     arName: 'حاسوب أحمد (المصدر)',
     type: 'host',
     ip: '192.168.1.10',
     mac: 'AA:AA:AA:11:11:11',
     subnet: '255.255.255.0',
     defaultGateway: '192.168.1.1',
-    x: 10,
+    x: 8,
     y: 28,
     status: 'idle',
     ports: [{ portNumber: 'eth0', connectedTo: 'switch-1', label: 'Fa0/1' }]
@@ -19,13 +20,14 @@ export const INITIAL_NETWORK_NODES: NetworkNode[] = [
   {
     id: 'host-b',
     name: 'Host B (كمبيوتر سارة)',
+    nameEn: 'Host B (Local Peer)',
     arName: 'حاسوب سارة (نفس الشبكة)',
     type: 'host',
     ip: '192.168.1.20',
     mac: 'BB:BB:BB:22:22:22',
     subnet: '255.255.255.0',
     defaultGateway: '192.168.1.1',
-    x: 10,
+    x: 8,
     y: 72,
     status: 'idle',
     ports: [{ portNumber: 'eth0', connectedTo: 'switch-1', label: 'Fa0/2' }]
@@ -33,12 +35,13 @@ export const INITIAL_NETWORK_NODES: NetworkNode[] = [
   {
     id: 'switch-1',
     name: 'Switch 1 (سويتش الدور الأول)',
+    nameEn: 'Switch 1 (Access Switch)',
     arName: 'سويتش الدور 1 (Layer 2)',
     type: 'switch',
     ip: '192.168.1.2 (Mgmt)',
     mac: '55:55:55:00:00:01',
     subnet: '255.255.255.0',
-    x: 28,
+    x: 23,
     y: 50,
     status: 'idle',
     ports: [
@@ -50,12 +53,13 @@ export const INITIAL_NETWORK_NODES: NetworkNode[] = [
   {
     id: 'router-1',
     name: 'Router 1 (راوتر البوابة)',
+    nameEn: 'Router 1 (Default Gateway)',
     arName: 'راوتر البوابة (Gateway - Layer 3)',
     type: 'router',
     ip: '192.168.1.1 (LAN) | 203.0.113.1 (WAN)',
     mac: 'R1:R1:R1:11:11:11 (LAN) | R1:WW:WW:11:11:11 (WAN)',
     subnet: '255.255.255.0 (LAN) | 255.255.255.252 (WAN)',
-    x: 50,
+    x: 42,
     y: 50,
     status: 'idle',
     ports: [
@@ -70,12 +74,13 @@ export const INITIAL_NETWORK_NODES: NetworkNode[] = [
   {
     id: 'router-2',
     name: 'Router 2 (راوتر مركز البيانات)',
+    nameEn: 'Router 2 (Data Center Gateway)',
     arName: 'راوتر السحابة (Data Center)',
     type: 'router',
     ip: '203.0.113.2 (WAN) | 10.0.0.1 (LAN2)',
     mac: 'R2:WW:WW:22:22:22 (WAN) | R2:R2:R2:22:22:22 (LAN2)',
     subnet: '255.255.255.252 (WAN) | 255.255.255.0 (LAN2)',
-    x: 72,
+    x: 62,
     y: 50,
     status: 'idle',
     ports: [
@@ -90,12 +95,13 @@ export const INITIAL_NETWORK_NODES: NetworkNode[] = [
   {
     id: 'switch-2',
     name: 'Switch 2 (سويتش السيرفرات)',
+    nameEn: 'Switch 2 (Server Access Switch)',
     arName: 'سويتش السيرفرات (Layer 2)',
     type: 'switch',
     ip: '10.0.0.2 (Mgmt)',
     mac: '66:66:66:00:00:02',
     subnet: '255.255.255.0',
-    x: 85,
+    x: 80,
     y: 50,
     status: 'idle',
     ports: [
@@ -106,6 +112,7 @@ export const INITIAL_NETWORK_NODES: NetworkNode[] = [
   {
     id: 'server-1',
     name: 'Cloud Web Server (موقع جوجل / يوتيوب)',
+    nameEn: 'Cloud Web Server (Target Host)',
     arName: 'سيرفر الويب البعيد (Target Server)',
     type: 'server',
     ip: '10.0.0.80',
@@ -408,7 +415,7 @@ export const SIMULATION_SCENARIOS: SimulationScenario[] = [
           whatIsHappening: 'السويتش 2 يرسل الفريم بدقة للمنفذ الوحيد المتصل بالسيرفر.',
           whyItHappens: 'توفير الباندويث ومنع التصادم (Collision Domain Isolation).',
           realLifeParallel: 'موظف الاستقبال في شركة طوكيو يسلم الطرد مباشرة إلى مكتب المبرمج المعني.',
-          keyObservation: 'السويتش يعمل بسرعة عتادية (Hardware ASIC) فائقة دون استهلاك معالجة L3.'
+          keyObservation: 'السويتش يعمل بسرعة معالجة مادية فائقة عبر الرقاقات الإلكترونية المباشرة (Hardware ASIC) دون استهلاك معالجة L3.'
         },
         highlightEvent: 'switch_forward'
       },
@@ -1095,7 +1102,7 @@ export const SIMULATION_SCENARIOS: SimulationScenario[] = [
     ]
   },
   {
-    id: 'stp-loop-prevention',
+    id: 'rstp-fast-convergence',
     titleAr: 'منع الحلقات اللانهائية والتعافي السريع (STP Loop Prevention & Fast Convergence)',
     titleEn: 'Spanning Tree Protocol (IEEE 802.1w Rapid STP Loop Prevention & Convergence)',
     badge: 'معقد جداً (Very Complex)',
@@ -1986,7 +1993,7 @@ export const SIMULATION_SCENARIOS: SimulationScenario[] = [
         id: 2,
         stageTitleAr: '2. راوتر قلب الشبكة ينزع الملصق الخارجي (Penultimate Hop Popping - PHP)',
         stageTitleEn: 'Core P Router PHP: Pop Outer Label (Implicit Null 3) to offload Egress PE',
-        stageDescriptionAr: 'راوتر قلب الشبكة يقرأ الملصق الخارجي فقط في عتاد الـ ASIC. يرى أن الملصق المطلوب هو Implicit Null 3، فيقوم بحذف الملصق الخارجي (Pop) ويرسل الحزمة بملصق الـ VPN الداخلي فقط نحو راوتر الخروج PE2.',
+        stageDescriptionAr: 'راوتر قلب الشبكة يقرأ الملصق الخارجي فقط عبر رقاقات المعالجة المباشرة (ASIC). يرى أن الملصق المطلوب هو Implicit Null 3، فيقوم بحذف الملصق الخارجي (Pop) ويرسل الحزمة بملصق الـ VPN الداخلي فقط نحو راوتر الخروج PE2.',
         layer: 'Layer 2.5 (MPLS PHP Popping)',
         activeNodeId: 'router-2',
         fromNodeId: 'router-1',

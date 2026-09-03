@@ -62,6 +62,68 @@ export interface ProtocolDetail {
   realWorldAnalogyEn?: string;
 }
 
+export interface DiagramNode {
+  id: string;
+  label: string;
+  subLabel?: string;
+  role?: 'router' | 'switch' | 'l3switch' | 'server' | 'host' | 'firewall' | 'cloud' | string;
+  x: number; // percentage (0-100)
+  y: number; // percentage (0-100)
+  ip?: string;
+  mac?: string;
+  status?: 'active' | 'root' | 'blocked' | 'forwarding' | 'normal';
+  area?: string;
+  asNumber?: string;
+  vlan?: number;
+  highlight?: boolean;
+}
+
+export interface DiagramLink {
+  from: string;
+  to: string;
+  label?: string;
+  style?: 'solid' | 'dashed' | 'active';
+  speed?: string;
+  vlanTrunk?: boolean;
+  status?: 'forwarding' | 'blocked' | 'alternate' | 'normal';
+}
+
+export interface DiagramHeaderField {
+  name: string;
+  bits: string;
+  byteOffset?: string;
+  descAr: string;
+  descEn?: string;
+  color?: string; // hex or tailwind class
+  exampleValue?: string;
+}
+
+export interface DiagramSequenceStep {
+  step: number;
+  fromNode: string;
+  toNode: string;
+  labelAr: string;
+  labelEn?: string;
+  protocolPacket: string;
+  detailsAr: string;
+  flagOrType?: string;
+}
+
+export interface DiagramData {
+  id: string;
+  type: 'topology' | 'header' | 'flow' | 'state-machine' | 'comparison' | 'architecture';
+  titleAr: string;
+  titleEn?: string;
+  captionAr?: string;
+  captionEn?: string;
+  nodes?: DiagramNode[];
+  links?: DiagramLink[];
+  headerFields?: DiagramHeaderField[];
+  sequenceSteps?: DiagramSequenceStep[];
+  stateNodes?: { state: string; labelAr: string; descAr: string; isFinal?: boolean }[];
+  stateTransitions?: { from: string; to: string; triggerAr: string }[];
+}
+
 export interface BookChapterPage {
   pageNumber: number;
   chapterTitleAr: string;
@@ -71,10 +133,22 @@ export interface BookChapterPage {
   estimatedReadTime: string;
   contentMarkdownAr: string;
   contentMarkdownEn?: string;
+  diagram?: DiagramData;
+  additionalDiagrams?: DiagramData[];
+  pageCategory?: 'architecture' | 'headers' | 'protocols' | 'topologies' | 'cli' | 'troubleshooting' | 'comparisons' | 'exam';
   keyTakeawaysAr?: string[];
   keyTakeawaysEn?: string[];
   ciscoTipAr?: string;
   ciscoTipEn?: string;
+  interactiveCheck?: {
+    questionAr: string;
+    questionEn?: string;
+    optionsAr: string[];
+    optionsEn?: string[];
+    correctIndex: number;
+    explanationAr: string;
+    explanationEn?: string;
+  };
 }
 
 export interface UserProfile {
@@ -135,7 +209,7 @@ export interface CurriculumSection {
 
 export interface WiresharkPacketLayer {
   layerName: string;
-  fields: { key: string; value: string; hex?: string; annotationAr?: string }[];
+  fields: { key: string; value: string; hex?: string; annotationAr?: string; annotationEn?: string }[];
 }
 
 export interface WiresharkFrame {
@@ -230,6 +304,7 @@ export interface ArpTableEntry {
 export interface NetworkNode {
   id: string;
   name: string;
+  nameEn?: string;
   arName: string;
   type: 'host' | 'switch' | 'router' | 'server';
   ip: string;
@@ -252,12 +327,52 @@ export interface NetworkLink {
   id: string;
   fromId: string;
   toId: string;
-  type: 'copper' | 'fiber';
+  type: 'copper' | 'fiber' | 'bundle' | 'tunnel';
   label?: string;
   fromPort?: string;
   toPort?: string;
   bandwidth?: string;
   isActive?: boolean;
+  status?: 'forwarding' | 'blocked' | 'alternate';
+}
+
+export interface TopologyZone {
+  id: string;
+  titleAr: string;
+  titleEn?: string;
+  subtitleAr?: string;
+  subtitleEn?: string;
+  ipRange?: string;
+  x: string; // e.g. "2%"
+  y: string;
+  width: string;
+  height: string;
+  borderColor?: string;
+  bgColor?: string;
+  textColor?: string;
+  badgeBg?: string;
+  pulseColor?: string;
+  badgeText?: string;
+}
+
+export interface NetworkTopology {
+  id: string;
+  titleAr: string;
+  titleEn: string;
+  categoryAr: string;
+  categoryEn?: string;
+  descriptionAr: string;
+  descriptionEn?: string;
+  badgeAr: string;
+  badgeEn?: string;
+  iconName: string;
+  nodes: NetworkNode[];
+  links: NetworkLink[];
+  zones: TopologyZone[];
+  supportedScenarioIds: string[];
+  defaultScenarioId: string;
+  featuresAr?: string[];
+  featuresEn?: string[];
 }
 
 export interface PacketHeaders {
@@ -276,10 +391,18 @@ export interface PacketHeaders {
     protocol: string;
     version?: string;
   };
+  l4?: {
+    srcPort?: number | string;
+    destPort?: number | string;
+    flags?: string[];
+    seqNumber?: number;
+    ackNumber?: number;
+  };
   payload: {
     type: string;
     data?: string;
     message?: string;
+    summary?: string;
   };
 }
 
@@ -289,13 +412,18 @@ export interface SimulationStep {
   stageTitleAr?: string;
   stageTitleEn?: string;
   stageDescriptionAr?: string;
+  stageDescriptionEn?: string;
   layer?: string;
   highlightEvent?: string;
   explanation?: string | {
     whatIsHappening?: string;
+    whatIsHappeningEn?: string;
     whyItHappens?: string;
+    whyItHappensEn?: string;
     realLifeParallel?: string;
+    realLifeParallelEn?: string;
     keyObservation?: string;
+    keyObservationEn?: string;
   };
   titleAr?: string;
   titleEn?: string;
@@ -394,6 +522,8 @@ export interface StreetStoryStep {
 export interface HumanNetworkStory {
   id: string;
   track?: CurriculumTrack;
+  category?: 'switching' | 'routing' | 'security' | 'services' | 'wan_advanced' | 'cloud_overlay' | string;
+  categoryAr?: string;
   titleAr: string;
   titleEn: string;
   subtitleAr: string;
@@ -418,22 +548,58 @@ export interface SlideData {
   number: number;
   category: 'foundation' | 'switching' | 'routing' | 'arp' | 'end_to_end' | 'comparison' | 'interactive_lab' | 'quiz' | string;
   categoryAr: string;
+  categoryEn?: string;
   titleAr: string;
   titleEn: string;
   subtitleAr: string;
+  subtitleEn?: string;
   realWorldMetaphor: {
     titleAr: string;
+    titleEn?: string;
     iconName: string;
     storyAr: string;
+    storyEn?: string;
     lessonAr: string;
-    comparison: { realWorld: string; networkWorld: string }[];
+    lessonEn?: string;
+    comparison: { realWorld: string; networkWorld: string; realWorldEn?: string; networkWorldEn?: string }[];
   };
   keyConcepts: {
     title: string;
+    titleEn?: string;
     term: string;
     desc: string;
+    descEn?: string;
     color: string;
   }[];
   interactiveScenarioId: string;
   takeawayMessage: string;
+  takeawayMessageEn?: string;
+  examTraps?: {
+    trapTitleAr: string;
+    trapTitleEn?: string;
+    questionAr: string;
+    questionEn?: string;
+    trickAr: string;
+    trickEn?: string;
+    correctRuleAr: string;
+    correctRuleEn?: string;
+  }[];
+  ciscoCliDeepDive?: {
+    command: string;
+    context: string;
+    contextEn?: string;
+    outputSample: string;
+    keyFieldExplanationAr: string;
+    keyFieldExplanationEn?: string;
+  }[];
+  knowledgeCheck?: {
+    questionAr: string;
+    questionEn?: string;
+    optionsAr: string[];
+    optionsEn?: string[];
+    correctIndex: number;
+    explanationAr: string;
+    explanationEn?: string;
+  };
 }
+

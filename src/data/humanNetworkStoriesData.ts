@@ -1,6 +1,7 @@
 import { HumanNetworkStory } from '../types';
+import { EXPANDED_CURRICULUM_STORIES } from './curriculumStoriesExpanded';
 
-export const HUMAN_NETWORK_STORIES: HumanNetworkStory[] = [
+const BASE_HUMAN_NETWORK_STORIES: HumanNetworkStory[] = [
   {
     id: 'story-arp-market-discovery',
     titleAr: 'النداء في سوق المدينة: كيف يبحث أحمد عن الطبيب المجهول؟',
@@ -398,6 +399,30 @@ export const HUMAN_NETWORK_STORIES: HumanNetworkStory[] = [
           'char-officer-sw2': 'ممتاز! إذا انقطع الشارع العلوي سأخبرك لترفع الحاجز فوراً.'
         },
         highlightedEventAr: 'حجب المنفذ وتحقيق طوبولوجيا خالية من الحلقات (Loop-Free)'
+      },
+      {
+        stepNumber: 3,
+        titleAr: '3. تدفق البيانات الآمن عبر المسار الشجري (Loop-Free Data Forwarding)',
+        storyNarrativeAr: 'الآن بعد أن أغلق الحاجز البرتقالي المسار الدائري المميت، تنطلق سيارات البيانات من قطاع ماجد نحو الضابط القائد فهد بسلاسة وأمان تام دون أن تدور حول نفسها أو تسبب أي شلل للميدان.',
+        technicalAnalogyAr: 'تتدفق إطارات البيانات حصراً عبر المنافذ المفتوحة (Root Ports و Designated Ports) مع منع الفريمات من العبور عبر المنفذ المحجوب (Blocking Port).',
+        ciscoProtocolTerm: 'Loop-Free Frame Forwarding in Tree Topology',
+        ciscoCommandSnippet: 'SW-3# show mac address-table dynamic\nSW-1# show interfaces trunk',
+        activeCharacterId: 'char-officer-sw3',
+        fromCharacterId: 'char-officer-sw3',
+        toCharacterId: 'char-officer-root',
+        payloadType: 'Standard Unicast Data Frame',
+        payloadContentAr: 'Clean Data Frame routed along Spanning Tree without broadcast storm risk',
+        l2Src: '00:03:00:00:00:03',
+        l2Dest: '00:01:00:00:00:01',
+        l3Src: '192.168.1.50',
+        l3Dest: '192.168.1.100',
+        ttlRemaining: 64,
+        packetPositionPercent: 65,
+        speechBubbles: {
+          'char-officer-sw3': 'المسار آمن، أرسلت البيانات نحو القائد فهد بلا أي دوران!',
+          'char-officer-root': 'وصلت الحزمة بسلام، شجرة الـ STP تعمل بكفاءة 100%!'
+        },
+        highlightedEventAr: 'تمرير البيانات بسلاسة وأمان عبر المسار الشجري المستقر'
       }
     ]
   },
@@ -485,9 +510,33 @@ export const HUMAN_NETWORK_STORIES: HumanNetworkStory[] = [
       },
       {
         stepNumber: 2,
-        titleAr: '2. حساب أقصر مسار رياضي وتوجيه الشحنة (Dijkstra SPF Calculation)',
+        titleAr: '2. تبادل إعلانات الروابط ومزامنة قاعدة البيانات (LSU Flooding & SPF Calculation)',
+        storyNarrativeAr: 'برج المراقبة (DR) يرسل حزمة تحديث الطرق (Link State Update LSU) إلى كريم تحوي تفاصيل وتكاليف كل شارع في المدينة. يشغل كريم خوارزمية ديكسترا (Dijkstra SPF) في أجزاء من الثانية ليرسم شجرة المسار الأقل تكلفة!',
+        technicalAnalogyAr: 'يقوم الراوتر باستقبال LSAs وتخزينها في الـ Link State Database (LSDB)، ثم يطلق خوارزمية Shortest Path First لحساب التكلفة الأقل نحو كل شبكة.',
+        ciscoProtocolTerm: 'OSPF LSU Flooding & Dijkstra SPF Calculation',
+        ciscoCommandSnippet: 'R1# show ip ospf database\nOSPF Router with ID (10.1.1.1) (Process ID 1)\nRouter Link States (Area 0)',
+        activeCharacterId: 'char-traffic-tower',
+        fromCharacterId: 'char-traffic-tower',
+        toCharacterId: 'char-courier-karim',
+        payloadType: 'OSPF LSU (Link State Update)',
+        payloadContentAr: 'LSU: Link 10.1.1.0/24 (Cost 10) | Fiber Link 172.16.1.0/24 (Cost 1)',
+        l2Src: '00:11:22:33:44:FE',
+        l2Dest: '00:11:22:33:44:01',
+        l3Src: '10.1.1.254',
+        l3Dest: '224.0.0.5',
+        ttlRemaining: 1,
+        packetPositionPercent: 55,
+        speechBubbles: {
+          'char-traffic-tower': 'تفضل هذه خريطة الطرق الحديثة (LSAs)، طريق الفايبر الجديد تكلفته 1 فقط!',
+          'char-courier-karim': 'استلمت الخريطة! خوارزمية ديكسترا حددت طريق الفايبر السريع كأفضل مسار.'
+        },
+        highlightedEventAr: 'مزامنة قاعدة بيانات الـ LSDB وحساب شجرة أقصر مسار SPF'
+      },
+      {
+        stepNumber: 3,
+        titleAr: '3. توجيه الشحنة عبر المسار الأسرع بأقل تكلفة (Dijkstra Shortest Path Forwarding)',
         storyNarrativeAr: 'كريم يرى طريقين: طريق الكورنيش السريع (10 Gbps / تكلفة = 1) وطريق السوق القديم (100 Mbps / تكلفة = 10). خوارزمية ديكسترا تختار طريق الكورنيش فوراً، فيوصل الشحنة في وقت قياسي!',
-        technicalAnalogyAr: 'يقوم الراوتر بتشغيل خوارزمية SPF على قاعدة بيانات الـ LSDB لبناء شجرة أقصر مسار وحقن أفضل المسارات في جدول التوجيه.',
+        technicalAnalogyAr: 'يقوم الراوتر بحقن المسار الفائز في جدول التوجيه (FIB) ويبدأ توجيه حزم البيانات عبر المنفذ ذي التكلفة التراكمية الأقل.',
         ciscoProtocolTerm: 'SPF Tree & Metric Cost Path Selection',
         ciscoCommandSnippet: 'R1# show ip route ospf (Metric 2 via 10.1.1.2)',
         activeCharacterId: 'char-courier-karim',
@@ -569,51 +618,99 @@ export const HUMAN_NETWORK_STORIES: HumanNetworkStory[] = [
     steps: [
       {
         stepNumber: 1,
-        titleAr: '1. استبدال الهوية الداخلية بهوية رسمية عامة (Outbound NAT Translation)',
-        storyNarrativeAr: 'خالد (192.168.1.45:49152) يصل لبوابة المجمع. رجل الأمن يرى أن خالد خارج للإنترنت، فيسجل في جدول الـ NAT: (192.168.1.45:49152 <-> 203.0.113.88:10024)، ويضع على الرسالة العنوان العام الرسمي.',
-        technicalAnalogyAr: 'يستبدل الراوتر Inside Local IP:Port بـ Inside Global IP:Port ويسجل ذلك في جدول ترجمة العناوين.',
-        ciscoProtocolTerm: 'PAT Translation (Port Address Translation / Overload)',
-        ciscoCommandSnippet: 'R1# show ip nat translations | debug ip nat',
-        activeCharacterId: 'char-security-guard-nat',
+        titleAr: '1. إرسال الطلب الداخلي إلى البوابة (Inside Local Ingress)',
+        storyNarrativeAr: 'خالد (192.168.1.45:49152) يرسل طلب تصفح موقع جوجل. الحزمة تنطلق بعنوانه الخاص المحلي إلى راوتر البوابة الافتراضية (Default Gateway).',
+        technicalAnalogyAr: 'يقوم الجهاز المضيف بإرسال حزمة IPv4 تحمل Inside Local IP و Inside Local Port باتجاه منفذ الراوتر الداخلي (Inside Interface).',
+        ciscoProtocolTerm: 'Inside Local Packet Generation (RFC 1918)',
+        ciscoCommandSnippet: 'R1(config-if)# ip nat inside',
+        activeCharacterId: 'char-emp-khalid',
         fromCharacterId: 'char-emp-khalid',
-        toCharacterId: 'char-google-server',
-        payloadType: 'NAT Translated Packet',
-        payloadContentAr: 'طلب صفحة ويب بهوية عامة: 203.0.113.88:10024 -> 8.8.8.8:443',
-        l2Src: 'GW:GW:GW:88:88:88',
-        l2Dest: 'Internet Gateway MAC',
-        l3Src: '203.0.113.88:10024 (Public)',
+        toCharacterId: 'char-security-guard-nat',
+        payloadType: 'Inside Local Packet',
+        payloadContentAr: 'HTTP Request: 192.168.1.45:49152 -> 8.8.8.8:443',
+        l2Src: 'AA:45:AA:45:AA:45',
+        l2Dest: 'GW:GW:GW:88:88:88',
+        l3Src: '192.168.1.45:49152',
         l3Dest: '8.8.8.8:443',
-        ttlRemaining: 63,
-        packetPositionPercent: 65,
+        ttlRemaining: 64,
+        packetPositionPercent: 30,
         speechBubbles: {
-          'char-emp-khalid': 'يا ضابط، أرسل هذا الطلب لجوجل!',
-          'char-security-guard-nat': 'أعطيتك المنفذ 10024 على عنواننا العام 203.0.113.88، وسجلته في الدفتر!'
+          'char-emp-khalid': 'يا راوتر البوابة، أريد زيارة جوجل من عنواني الداخلي 192.168.1.45!',
+          'char-security-guard-nat': 'استلمت طلبك، عنوانك الداخلي غير مسموح به في الإنترنت، سأقوم بترجمته فوراً!'
         },
-        highlightedEventAr: 'ترجمة العنوان الخاص إلى عنوان عام مسجل'
+        highlightedEventAr: 'وصول الحزمة الداخلية لمنفذ ip nat inside'
       },
       {
         stepNumber: 2,
-        titleAr: '2. استلام الرد وعكس الترجمة للموظف (Inbound Return & De-NAT)',
-        storyNarrativeAr: 'سيرفر جوجل يرد على العنوان العام (203.0.113.88:10024). ضابط الأمن يفتح دفتره، يبحث عن المنفذ 10024 فيجد أنه يعود لخالد في المكتب 192.168.1.45، فيعطيه الرد فوراً.',
-        technicalAnalogyAr: 'عند عودة الحزمة من الإنترنت، يفحص الراوتر الـ Destination Port، يطابقه في NAT Table، ويستبدل الـ IP بـ Inside Local IP.',
-        ciscoProtocolTerm: 'Inbound NAT Table Lookup & Packet Delivery',
+        titleAr: '2. استبدال الهوية وتسجيل المنفذ في جدول NAT (PAT Outbound Translation)',
+        storyNarrativeAr: 'ضابط أمن البوابة (الراوتر) يستبدل عنوان خالد الخاص بعنوان البوابة العام (203.0.113.88) ويخصص له رقم منفذ فريد (10024)، ويسجل السطر في جدول الـ NAT ثم يوجه الحزمة للإنترنت.',
+        technicalAnalogyAr: 'الراوتر يستبدل Inside Local بـ Inside Global (PAT Overload) ويسجل الترجمة الديناميكية في جدول الـ NAT Translations ويرسلها عبر منفذ الـ Outside.',
+        ciscoProtocolTerm: 'PAT Translation (Port Address Translation / Overload)',
+        ciscoCommandSnippet: 'R1# show ip nat translations\nPro Inside global      Inside local       Outside local      Outside global\ntcp 203.0.113.88:10024 192.168.1.45:49152 8.8.8.8:443        8.8.8.8:443',
+        activeCharacterId: 'char-security-guard-nat',
+        fromCharacterId: 'char-security-guard-nat',
+        toCharacterId: 'char-google-server',
+        payloadType: 'NAT Translated Packet',
+        payloadContentAr: 'Translated: 203.0.113.88:10024 -> 8.8.8.8:443',
+        l2Src: 'GW:GW:GW:88:88:88',
+        l2Dest: 'GG:GG:GG:88:88:88',
+        l3Src: '203.0.113.88:10024 (Public)',
+        l3Dest: '8.8.8.8:443',
+        ttlRemaining: 63,
+        packetPositionPercent: 68,
+        speechBubbles: {
+          'char-security-guard-nat': 'خصصت لك المنفذ 10024 على عنواننا العام 203.0.113.88 وسجلته في الدفتر!',
+          'char-google-server': 'استلمت طلباً من العنوان العام المعتمد 203.0.113.88:10024.'
+        },
+        highlightedEventAr: 'ترجمة العنوان الخاص وحقن الهوية العامة المسجلة'
+      },
+      {
+        stepNumber: 3,
+        titleAr: '3. استلام الرد من الإنترنت على العنوان العام (Inbound Outside Return)',
+        storyNarrativeAr: 'خادم جوجل ينتهي من تجهيز صفحة الويب ويرسل الرد مستهدفاً العنوان العام للراوتر (203.0.113.88) ورقم المنفذ (10024) دون أن يعلم أصلاً بوجود عنوان خالد الداخلي.',
+        technicalAnalogyAr: 'يصل الرد من الخادم الخارجي باتجاه منفذ الـ Outside Interface حاملاً Outside Global كعنوان مصدر، و Inside Global كعنوان وجهة.',
+        ciscoProtocolTerm: 'Inbound Return Traffic on NAT Outside Interface',
+        ciscoCommandSnippet: 'R1# debug ip nat\nNAT*: s=8.8.8.8, d=203.0.113.88->192.168.1.45 [10024]',
+        activeCharacterId: 'char-google-server',
+        fromCharacterId: 'char-google-server',
+        toCharacterId: 'char-security-guard-nat',
+        payloadType: 'Public Web Response',
+        payloadContentAr: 'Response: 8.8.8.8:443 -> 203.0.113.88:10024 (Encrypted Web Page)',
+        l2Src: 'GG:GG:GG:88:88:88',
+        l2Dest: 'GW:GW:GW:88:88:88',
+        l3Src: '8.8.8.8:443',
+        l3Dest: '203.0.113.88:10024',
+        ttlRemaining: 58,
+        packetPositionPercent: 70,
+        speechBubbles: {
+          'char-google-server': 'تفضل صفحة الويب المطلوبة يا صاحب العنوان العام 203.0.113.88:10024!',
+          'char-security-guard-nat': 'وصل الرد! سأفتح جدول الـ NAT لأعرف لمن يعود المنفذ 10024.'
+        },
+        highlightedEventAr: 'استقبال الرد على العنوان والمنفذ العامين'
+      },
+      {
+        stepNumber: 4,
+        titleAr: '4. مطابقة الجدول وعكس الترجمة للموظف (Inbound De-NAT & Delivery)',
+        storyNarrativeAr: 'ضابط البوابة يفحص جدول الـ NAT، فيجد أن المنفذ 10024 محجوز للمهندس خالد (192.168.1.45:49152). يزيل العنوان العام ويكتب عنوان خالد الداخلي ويسلمه الصفحة بنجاح!',
+        technicalAnalogyAr: 'يقوم الراوتر بعملية De-NAT: استبدال Inside Global بـ Inside Local ثم توجيه الحزمة عبر الشبكة الداخلية إلى الجهاز المستهدف.',
+        ciscoProtocolTerm: 'Inbound De-NAT Table Lookup & Delivery',
         ciscoCommandSnippet: 'R1# show ip nat statistics',
         activeCharacterId: 'char-security-guard-nat',
-        fromCharacterId: 'char-google-server',
+        fromCharacterId: 'char-security-guard-nat',
         toCharacterId: 'char-emp-khalid',
-        payloadType: 'Web Response to Internal Host',
-        payloadContentAr: 'صفحة الويب تسلم للمهندس خالد على 192.168.1.45',
+        payloadType: 'De-NAT Delivered Web Content',
+        payloadContentAr: 'Decrypted Page -> 192.168.1.45:49152 (Complete Privacy)',
         l2Src: 'GW:GW:GW:88:88:88',
         l2Dest: 'AA:45:AA:45:AA:45',
         l3Src: '8.8.8.8:443',
         l3Dest: '192.168.1.45:49152',
-        ttlRemaining: 62,
-        packetPositionPercent: 90,
+        ttlRemaining: 57,
+        packetPositionPercent: 15,
         speechBubbles: {
-          'char-google-server': 'تفضل الرد يا صاحب العنوان 203.0.113.88:10024!',
-          'char-emp-khalid': 'استلمت الصفحة بنجاح دون أن يعلم الإنترنت بعنواني الداخلي!'
+          'char-security-guard-nat': 'بحثت في سجلي، المنفذ 10024 لك يا خالد، تفضل صفحة الويب!',
+          'char-emp-khalid': 'استلمت الصفحة وتصفحت الإنترنت بأمان كامل وخصوصية مطلقة!'
         },
-        highlightedEventAr: 'اكتمال دورة ترجمة العناوين وحماية الخصوصية الداخلية'
+        highlightedEventAr: 'عكس الترجمة وتسليم البيانات للعنوان المحلي بنجاح'
       }
     ]
   },
@@ -1263,13 +1360,13 @@ export const HUMAN_NETWORK_STORIES: HumanNetworkStory[] = [
     id: 'story-mpls-bullet-train-labels',
     titleAr: 'قطار الشحن السريع بالباركود الآلي: سحر MPLS والتوجيه الذكي للتسميات',
     titleEn: 'The High-Speed Bullet Train Luggage Barcode Sorting (MPLS Label Swapping)',
-    subtitleAr: 'فهم كيف يستبدل بروتوكول MPLS فحص ترويسات IP الثقيلة بملصقات عتادية سريعة (20-bit Labels) في قلب شبكات مزودي الخدمة',
+    subtitleAr: 'فهم كيف يستبدل بروتوكول MPLS فحص ترويسات IP الثقيلة بملصقات سريعة (20-bit Labels) عبر الرقاقات المادية في قلب شبكات مزودي الخدمة',
     protocolBadge: 'Multi-Protocol Label Switching (MPLS / LDP)',
     difficulty: 'مستوى خبير (Expert / CCIE)',
     coverIcon: 'Layers',
     sceneTheme: 'airport_terminal',
     storySummaryAr: 'في محطة قطار فائق السرعة، تصل آلاف الحقائب الدولية. بدلاً من فتح كل حقيبة وقراءة عنوان الشارع واسم صاحبها الطويل، يطبع موظف المدخل باركود صغير (Label 1050). في كل محطة وسيطة، يمرر الماسح الضوئي الضوء على الباركود ويستبدله بملصق المحطة التالية بسرعة البرق!',
-    realWorldScenarioDescriptionAr: 'في العالم الحقيقي: راوترات الـ Core (P Routers) في شبكات مزودي الخدمة تتعامل مع ملايين المسارات. بروتوكول MPLS يضيف ترويسة Shim Header صغيرة (20-bit Label) بين الطبقة 2 والطبقة 3. راوترات قلب الشبكة لا تنظر لترويسة الـ IP ولا لجدول التوجيه الضخم، بل تقرأ التسمية في عتاد الـ ASIC (LFIB Table) وتستبدلها بملصق جديد (Label Swapping) في أجزاء من النانو ثانية!',
+    realWorldScenarioDescriptionAr: 'في العالم الحقيقي: راوترات الـ Core (P Routers) في شبكات مزودي الخدمة تتعامل مع ملايين المسارات. بروتوكول MPLS يضيف ترويسة Shim Header صغيرة (20-bit Label) بين الطبقة 2 والطبقة 3. راوترات قلب الشبكة لا تنظر لترويسة الـ IP ولا لجدول التوجيه الضخم، بل تقرأ التسمية عبر رقاقات المعالجة المباشرة (LFIB Table) وتستبدلها بملصق جديد (Label Swapping) في أجزاء من النانو ثانية!',
     ciscoCoreLessonAr: 'MPLS يفصل بين مسار التحكم (Control Plane المعتمد على LDP و BGP) ومسار التوجيه (Data Plane المعتمد على تبديل الملصقات في LFIB). تقنية PHP (Penultimate Hop Popping) تحذف الملصق الخارجي قبل القفزة الأخيرة لتسريع المعالجة.',
     characters: [
       {
@@ -1360,7 +1457,7 @@ export const HUMAN_NETWORK_STORIES: HumanNetworkStory[] = [
         packetPositionPercent: 65,
         speechBubbles: {
           'char-core-swapper': 'تم مسح وتبديل التسمية في أقل من نانو ثانية بدون استهلاك المعالج!',
-          'char-label-ingress': 'هذه هي السرعة الخارقة لتبديل التسميات في عتاد الـ ASIC.'
+          'char-label-ingress': 'هذه هي السرعة الخارقة لتبديل التسميات مباشرة عبر رقاقات الـ ASIC المادية.'
         },
         highlightedEventAr: 'تبديل التسميات وحذف الملصق الخارجي (PHP)'
       },
@@ -1521,5 +1618,10 @@ export const HUMAN_NETWORK_STORIES: HumanNetworkStory[] = [
       }
     ]
   }
+];
+
+export const HUMAN_NETWORK_STORIES: HumanNetworkStory[] = [
+  ...BASE_HUMAN_NETWORK_STORIES,
+  ...EXPANDED_CURRICULUM_STORIES
 ];
 

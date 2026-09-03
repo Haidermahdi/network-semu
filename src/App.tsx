@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Zap } from 'lucide-react';
 import { SLIDES_DATA } from './data/slidesData';
 import { SlideViewer } from './components/SlideViewer';
 import { InteractiveLab } from './components/InteractiveLab';
@@ -220,32 +221,41 @@ export default function App() {
             )}
 
             {currentMode === 'lab' && (
-              <InteractiveLab initialScenarioId={activeLabScenarioId} />
+              <InteractiveLab initialScenarioId={activeLabScenarioId} lang={lang} />
             )}
 
             {currentMode === 'slides' && (
               <div className="space-y-4">
-                <div className="p-2 rounded-2xl bg-white/[0.02] border border-white/[0.06] overflow-x-auto flex items-center gap-1.5">
-                  <span className="text-[11px] text-slate-500 font-bold px-2 shrink-0">
-                    {lang === 'ar' ? 'فهرس السلايدات' : 'Slide Index'}
-                  </span>
-                  {SLIDES_DATA.map((s, idx) => (
-                    <button
-                      key={s.id}
-                      onClick={() => {
-                        setCurrentSlideIndex(idx);
-                        playNetworkTone('packet');
-                      }}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                        currentSlideIndex === idx
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                          : 'bg-white/[0.03] text-slate-400 hover:text-slate-200 hover:bg-white/[0.06] border border-white/[0.04]'
-                      }`}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      <span>{s.number}. {lang === 'ar' ? s.titleAr.split(':')[0] : s.titleEn.split(':')[0]}</span>
-                    </button>
-                  ))}
+                <div className="p-2.5 rounded-3xl bg-slate-900/90 border border-white/[0.08] shadow-xl backdrop-blur-xl flex items-center gap-2 overflow-x-auto">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-bold shrink-0">
+                    <Zap className="w-3.5 h-3.5" />
+                    <span>{lang === 'ar' ? 'فهرس الشرائح' : 'Slide Deck'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
+                    {SLIDES_DATA.map((s, idx) => (
+                      <button
+                        key={s.id}
+                        onClick={() => {
+                          setCurrentSlideIndex(idx);
+                          playNetworkTone('packet');
+                        }}
+                        className={`px-3.5 py-1.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 shrink-0 cursor-pointer ${
+                          currentSlideIndex === idx
+                            ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-black'
+                            : 'bg-slate-950/70 text-slate-300 hover:text-white hover:bg-white/[0.06] border border-white/[0.05]'
+                        }`}
+                      >
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center font-mono text-[10px] ${
+                          currentSlideIndex === idx
+                            ? 'bg-slate-950 text-amber-400 font-bold'
+                            : 'bg-white/[0.05] text-slate-400'
+                        }`}>
+                          {s.number}
+                        </span>
+                        <span>{lang === 'ar' ? s.titleAr.split(':')[0] : s.titleEn.split(':')[0]}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <SlideViewer
                   currentSlideIndex={currentSlideIndex}
@@ -253,15 +263,16 @@ export default function App() {
                     setCurrentSlideIndex(newIdx);
                     playNetworkTone('packet');
                   }}
+                  lang={lang}
                 />
               </div>
             )}
 
-            {currentMode === 'protocols' && <ProtocolStateMachine />}
-            {currentMode === 'wireshark' && <WiresharkInspector />}
-            {currentMode === 'cli' && <CiscoCliTerminal />}
-            {currentMode === 'quiz' && <QuizSection />}
-            {currentMode === 'ai' && <AiNetworkTutor />}
+            {currentMode === 'protocols' && <ProtocolStateMachine lang={lang} />}
+            {currentMode === 'wireshark' && <WiresharkInspector lang={lang} />}
+            {currentMode === 'cli' && <CiscoCliTerminal lang={lang} />}
+            {currentMode === 'quiz' && <QuizSection lang={lang} />}
+            {currentMode === 'ai' && <AiNetworkTutor lang={lang} />}
           </div>
         </main>
 

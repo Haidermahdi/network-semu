@@ -13,8 +13,13 @@ import {
   Lightbulb
 } from 'lucide-react';
 import { QUIZ_QUESTIONS } from '../data/slidesData';
+import { Language } from '../types';
 
-export const QuizSection: React.FC = () => {
+interface QuizSectionProps {
+  lang?: Language;
+}
+
+export const QuizSection: React.FC<QuizSectionProps> = ({ lang = 'ar' }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -23,6 +28,12 @@ export const QuizSection: React.FC = () => {
   const [answeredMap, setAnsweredMap] = useState<{ [key: number]: number }>({});
 
   const currentQ = QUIZ_QUESTIONS[currentQuestionIndex];
+  const isEn = lang === 'en';
+  const options = (isEn && currentQ.optionsEn) ? currentQ.optionsEn : currentQ.optionsAr;
+  const questionText = (isEn && currentQ.questionEn) ? currentQ.questionEn : currentQ.questionAr;
+  const explanationText = (isEn && currentQ.explanationEn) ? currentQ.explanationEn : currentQ.explanationAr;
+  const analogyText = (isEn && currentQ.realWorldAnalogyEn) ? currentQ.realWorldAnalogyEn : currentQ.realWorldAnalogyAr;
+  const difficultyText = (isEn && currentQ.difficultyEn) ? currentQ.difficultyEn : currentQ.difficulty;
 
   const handleOptionSelect = (index: number) => {
     if (showResult) return;
@@ -77,7 +88,10 @@ export const QuizSection: React.FC = () => {
   };
 
   return (
-    <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-5 sm:p-6 shadow-2xl relative overflow-hidden">
+    <div 
+      className="bg-slate-900/90 rounded-2xl border border-slate-800 p-5 sm:p-6 shadow-2xl relative overflow-hidden"
+      dir={isEn ? 'ltr' : 'rtl'}
+    >
       {!quizCompleted ? (
         <div>
           {/* Header */}
@@ -88,20 +102,22 @@ export const QuizSection: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-slate-100">
-                  تحدي إتقان السويتشينغ والراوتينغ
+                  {isEn ? 'Switching & Routing Mastery Challenge' : 'تحدي إتقان السويتشينغ والراوتينغ'}
                 </h3>
                 <p className="text-xs text-slate-400">
-                  السؤال {currentQuestionIndex + 1} من {QUIZ_QUESTIONS.length}
+                  {isEn 
+                    ? `Question ${currentQuestionIndex + 1} of ${QUIZ_QUESTIONS.length}`
+                    : `السؤال ${currentQuestionIndex + 1} من ${QUIZ_QUESTIONS.length}`}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <span className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono text-cyan-300">
-                مستوى الصعوبة: {currentQ.difficulty}
+                {isEn ? `Difficulty: ${difficultyText}` : `مستوى الصعوبة: ${difficultyText}`}
               </span>
               <span className="px-2.5 py-1 rounded-lg bg-indigo-950 border border-indigo-500/30 text-xs font-bold text-indigo-300">
-                النقاط: {score} / {QUIZ_QUESTIONS.length}
+                {isEn ? `Score: ${score} / ${QUIZ_QUESTIONS.length}` : `النقاط: ${score} / ${QUIZ_QUESTIONS.length}`}
               </span>
             </div>
           </div>
@@ -117,9 +133,9 @@ export const QuizSection: React.FC = () => {
           {/* Question Text */}
           <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800/80 mb-5">
             <h4 className="text-base sm:text-lg font-bold text-slate-100 leading-relaxed">
-              {currentQ.questionAr}
+              {questionText}
             </h4>
-            {currentQ.questionEn && (
+            {!isEn && currentQ.questionEn && (
               <p className="text-xs text-slate-400 font-mono mt-1 dir-ltr text-right">
                 {currentQ.questionEn}
               </p>
@@ -128,7 +144,7 @@ export const QuizSection: React.FC = () => {
 
           {/* Options */}
           <div className="space-y-3 mb-6">
-            {currentQ.optionsAr.map((option, idx) => {
+            {options.map((option, idx) => {
               const isSelected = selectedOption === idx;
               const isCorrect = idx === currentQ.correctAnswerIndex;
               let optionStyle = 'bg-slate-950/60 hover:bg-slate-800/60 border-slate-800 text-slate-200';
@@ -146,11 +162,11 @@ export const QuizSection: React.FC = () => {
                   key={idx}
                   onClick={() => handleOptionSelect(idx)}
                   disabled={showResult}
-                  className={`w-full text-right p-3.5 sm:p-4 rounded-xl border text-xs sm:text-sm font-medium transition-all flex items-center justify-between ${optionStyle}`}
+                  className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 sm:p-4 rounded-xl border text-xs sm:text-sm font-medium transition-all flex items-center justify-between ${optionStyle}`}
                 >
                   <span>{option}</span>
-                  {showResult && isCorrect && <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mr-2" />}
-                  {showResult && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-rose-400 shrink-0 mr-2" />}
+                  {showResult && isCorrect && <CheckCircle2 className={`w-5 h-5 text-emerald-400 shrink-0 ${isEn ? 'ml-2' : 'mr-2'}`} />}
+                  {showResult && isSelected && !isCorrect && <XCircle className={`w-5 h-5 text-rose-400 shrink-0 ${isEn ? 'ml-2' : 'mr-2'}`} />}
                 </button>
               );
             })}
@@ -161,14 +177,16 @@ export const QuizSection: React.FC = () => {
             <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-700/80 space-y-2.5 mb-6 animate-fadeIn">
               <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
                 <Lightbulb className="w-4 h-4" />
-                <span>الشرح الهندسي المفصل:</span>
+                <span>{isEn ? 'Detailed Engineering Explanation:' : 'الشرح الهندسي المفصل:'}</span>
               </div>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                {currentQ.explanationAr}
+                {explanationText}
               </p>
-              <div className="text-xs text-cyan-300 bg-cyan-950/30 p-2.5 rounded-lg border border-cyan-500/20">
-                <strong>تشبيه واقعي: </strong>{currentQ.realWorldAnalogyAr}
-              </div>
+              {analogyText && (
+                <div className="text-xs text-cyan-300 bg-cyan-950/30 p-2.5 rounded-lg border border-cyan-500/20">
+                  <strong>{isEn ? 'Real-World Analogy: ' : 'تشبيه واقعي: '}</strong>{analogyText}
+                </div>
+              )}
             </div>
           )}
 
@@ -179,8 +197,8 @@ export const QuizSection: React.FC = () => {
               disabled={currentQuestionIndex === 0}
               className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-slate-300 text-xs font-bold transition-all flex items-center gap-1"
             >
-              <ArrowRight className="w-4 h-4" />
-              <span>السابق</span>
+              {isEn ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+              <span>{isEn ? 'Previous' : 'السابق'}</span>
             </button>
 
             <button
@@ -188,8 +206,8 @@ export const QuizSection: React.FC = () => {
               disabled={!showResult}
               className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 disabled:opacity-40 text-white text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-1.5"
             >
-              <span>{currentQuestionIndex === QUIZ_QUESTIONS.length - 1 ? 'عرض النتيجة النهائية' : 'السؤال التالي'}</span>
-              <ArrowLeft className="w-4 h-4" />
+              <span>{currentQuestionIndex === QUIZ_QUESTIONS.length - 1 ? (isEn ? 'View Final Result' : 'عرض النتيجة النهائية') : (isEn ? 'Next Question' : 'السؤال التالي')}</span>
+              {isEn ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
             </button>
           </div>
         </div>
@@ -202,10 +220,12 @@ export const QuizSection: React.FC = () => {
 
           <div>
             <h3 className="text-xl sm:text-2xl font-bold text-slate-100">
-              مبروك! أتممت اختبار السويتشينغ والراوتينغ
+              {isEn ? 'Congratulations! Quiz Completed' : 'مبروك! أتممت اختبار السويتشينغ والراوتينغ'}
             </h3>
             <p className="text-sm text-slate-400 mt-1">
-              لقد استوعبت رحلة حزم البيانات بدقة هندسية عالية
+              {isEn 
+                ? 'You have successfully navigated the data packet journey with high engineering precision.'
+                : 'لقد استوعبت رحلة حزم البيانات بدقة هندسية عالية'}
             </p>
           </div>
 
@@ -214,14 +234,18 @@ export const QuizSection: React.FC = () => {
               {score} / {QUIZ_QUESTIONS.length}
             </div>
             <div className="text-xs text-slate-400 mt-1">
-              نسبة الإتقان: {Math.round((score / QUIZ_QUESTIONS.length) * 100)}%
+              {isEn ? `Mastery Rate: ${Math.round((score / QUIZ_QUESTIONS.length) * 100)}%` : `نسبة الإتقان: ${Math.round((score / QUIZ_QUESTIONS.length) * 100)}%`}
             </div>
           </div>
 
           <div className="p-4 max-w-lg mx-auto rounded-xl bg-indigo-950/30 border border-indigo-500/30 text-xs sm:text-sm text-indigo-200 leading-relaxed">
             {score >= 4 
-              ? '🌟 مستوى ممتاز! أصبحت تفهم بوضوح كيف يعمل السويتش في Layer 2 وكيف يوجه الراوتر في Layer 3 ولماذا يتغير الـ MAC ويبقى الـ IP ثابتاً.'
-              : '👍 بداية ممتازة! يمكنك مراجعة السلايدات التفاعلية ومشاهدة حركة الحزم مرة أخرى لترسيخ الفهم 100%.'}
+              ? (isEn 
+                  ? '🌟 Excellent performance! You have a solid grasp of how Layer 2 switching and Layer 3 routing operate, and why MAC addresses change while IP addresses remain constant.'
+                  : '🌟 مستوى ممتاز! أصبحت تفهم بوضوح كيف يعمل السويتش في Layer 2 وكيف يوجه الراوتر في Layer 3 ولماذا يتغير الـ MAC ويبقى الـ IP ثابتاً.')
+              : (isEn 
+                  ? '👍 Great start! You can review the interactive slides and re-watch the packet animation in the lab to cement your understanding 100%.'
+                  : '👍 بداية ممتازة! يمكنك مراجعة السلايدات التفاعلية ومشاهدة حركة الحزم مرة أخرى لترسيخ الفهم 100%.')}
           </div>
 
           <div className="pt-3">
@@ -230,7 +254,7 @@ export const QuizSection: React.FC = () => {
               className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm inline-flex items-center gap-2 transition-all"
             >
               <RotateCcw className="w-4 h-4" />
-              <span>إعادة الاختبار</span>
+              <span>{isEn ? 'Retake Quiz' : 'إعادة الاختبار'}</span>
             </button>
           </div>
         </div>

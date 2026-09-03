@@ -177,27 +177,26 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   };
 
   return (
-    <div className={`min-h-screen bg-[#060911] text-slate-100 flex flex-col justify-between font-sans selection:bg-indigo-500/30 selection:text-indigo-200 relative overflow-hidden ${lang === 'ar' ? 'dir-rtl' : 'dir-ltr'}`}>
-      {/* Background Decorative Gradients */}
-      <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-cyan-600/10 rounded-full blur-[160px] pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-900/5 rounded-full blur-[200px] pointer-events-none" />
+    <div className={`min-h-screen bg-[#070a12] text-slate-100 flex flex-col justify-between font-sans relative overflow-hidden ${lang === 'ar' ? 'dir-rtl' : 'dir-ltr'}`}>
+      {/* Subtle Background Glow - Single Cohesive Tone */}
+      <div className="absolute top-0 right-1/3 w-[600px] h-[600px] bg-amber-500/[0.03] rounded-full blur-[180px] pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-slate-800/[0.1] rounded-full blur-[160px] pointer-events-none" />
 
       {/* Top Header */}
       <header className="relative z-10 max-w-7xl w-full mx-auto p-4 sm:p-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 via-amber-600 to-orange-700 flex items-center justify-center shadow-lg shadow-amber-900/40">
-            <span className="text-xl font-black text-amber-50" style={{ fontFamily: 'serif' }}>𒀭</span>
+          <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shadow-sm">
+            <span className="text-lg font-black text-amber-400" style={{ fontFamily: 'serif' }}>𒀭</span>
           </div>
           <div>
-            <h1 className="text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
+            <h1 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-2">
               <span>{lang === 'ar' ? 'منصة الفريق السومري للتعلم' : 'Sumerian Team Learning Platform'}</span>
-              <span className="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/25 text-[10px] font-bold font-mono">
+              <span className="px-2 py-0.5 rounded-md bg-white/[0.05] text-slate-300 border border-white/[0.08] text-[10px] font-bold font-mono">
                 CCNA • CCNP • CCIE
               </span>
             </h1>
-            <p className="text-xs text-slate-400 hidden sm:block">
-              {lang === 'ar' ? 'منصة تعليمية احترافية لهندسة الشبكات والشهادات المعتمدة' : 'Professional educational platform for network engineering & certifications'}
+            <p className="text-[11px] text-slate-400 hidden sm:block">
+              {lang === 'ar' ? 'منصة تعليمية متقدمة لهندسة الشبكات والشهادات المعتمدة' : 'Advanced educational platform for network engineering & certifications'}
             </p>
           </div>
         </div>
@@ -205,9 +204,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         {/* Language Switcher */}
         <button
           onClick={() => onLanguageChange(lang === 'ar' ? 'en' : 'ar')}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-cyan-300 border border-slate-800 transition-all text-xs font-bold font-mono shadow-md cursor-pointer"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] text-slate-300 hover:text-white border border-white/[0.08] transition-all text-xs font-bold font-mono cursor-pointer"
         >
-          <Languages className="w-4 h-4 text-cyan-400" />
+          <Languages className="w-3.5 h-3.5 text-slate-400" />
           <span>{lang === 'ar' ? 'English (EN)' : 'العربية (AR)'}</span>
         </button>
       </header>
@@ -218,8 +217,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           
           {/* Left Column: Platform Features & Value Proposition */}
           <div className="lg:col-span-7 space-y-6">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/25 text-xs font-bold text-amber-300">
-              <Sparkles className="w-4 h-4 text-amber-400" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs font-bold text-amber-400">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               <span>{lang === 'ar' ? 'بوابة الدخول إلى منصة الفريق السومري للتعلم' : 'Gateway to Sumerian Team Learning Platform'}</span>
             </div>
 
@@ -227,11 +226,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
                 {lang === 'ar' ? (
                   <>
-                    تعلّم هندسة شبكات سيسكو من <span className="bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">الصفر حتى الاحتراف</span>
+                    تعلّم هندسة شبكات سيسكو من <span className="text-amber-400">الصفر حتى الاحتراف</span>
                   </>
                 ) : (
                   <>
-                    Master Enterprise Networks from <span className="bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">Basics to CCIE</span>
+                    Master Enterprise Networks from <span className="text-amber-400">Basics to CCIE</span>
                   </>
                 )}
               </h2>
@@ -242,25 +241,25 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               </p>
             </div>
 
-            {/* Feature Highlights Grid */}
+            {/* Feature Highlights Grid - Unified Cohesive Neutrals */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
-              <div className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800/80 hover:border-slate-700 transition-all flex items-start gap-3.5">
-                <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
-                  <BookOpen className="w-5 h-5" />
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.07] hover:border-white/[0.14] transition-all flex items-start gap-3.5">
+                <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                  <BookOpen className="w-4 h-4" />
                 </div>
                 <div className="space-y-1">
                   <h3 className="text-xs font-bold text-white">
                     {lang === 'ar' ? 'كتب رقمية تفاعلية متعددة الفصول' : 'Multi-Page Interactive Textbooks'}
                   </h3>
                   <p className="text-[11px] text-slate-400 leading-relaxed">
-                    {lang === 'ar' ? 'شروحات عميقة لكل موضوع مقسمة إلى 5 فصول تخصصية مع حسابات الـ Math وأوامر التحقق.' : '5 dedicated chapters per topic with bit math, CLI traces and blueprint notes.'}
+                    {lang === 'ar' ? 'شروحات عميقة لكل موضوع مقسمة إلى فصول تخصصية مع حسابات الـ Math وأوامر التحقق.' : 'Dedicated chapters per topic with bit math, CLI traces and blueprint notes.'}
                   </p>
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800/80 hover:border-slate-700 transition-all flex items-start gap-3.5">
-                <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
-                  <Cpu className="w-5 h-5" />
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.07] hover:border-white/[0.14] transition-all flex items-start gap-3.5">
+                <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                  <Cpu className="w-4 h-4" />
                 </div>
                 <div className="space-y-1">
                   <h3 className="text-xs font-bold text-white">
@@ -272,9 +271,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800/80 hover:border-slate-700 transition-all flex items-start gap-3.5">
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.07] hover:border-white/[0.14] transition-all flex items-start gap-3.5">
                 <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
-                  <Users className="w-5 h-5" />
+                  <Users className="w-4 h-4" />
                 </div>
                 <div className="space-y-1">
                   <h3 className="text-xs font-bold text-white">
@@ -286,9 +285,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800/80 hover:border-slate-700 transition-all flex items-start gap-3.5">
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
-                  <Award className="w-5 h-5" />
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.07] hover:border-white/[0.14] transition-all flex items-start gap-3.5">
+                <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                  <Award className="w-4 h-4" />
                 </div>
                 <div className="space-y-1">
                   <h3 className="text-xs font-bold text-white">
@@ -302,7 +301,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             </div>
 
             {/* Quick Demo Access Bar */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.07] flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-xs text-slate-300">
                 <Zap className="w-4 h-4 text-amber-400" />
                 <span>{lang === 'ar' ? 'هل تود تجربة المنصة مباشرة بدون إدخال بريد؟' : 'Want to try the platform instantly with a demo account?'}</span>
@@ -310,25 +309,25 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               <button
                 type="button"
                 onClick={() => handleQuickDemoLogin('ccna')}
-                className="px-4 py-2 rounded-xl bg-indigo-600/90 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <span>{lang === 'ar' ? 'دخول تجريبي فوري (Demo Access)' : 'Instant Demo Login'}</span>
-                <ArrowLeft className="w-3.5 h-3.5" />
+                <ArrowLeft className="w-3.5 h-3.5 text-slate-400" />
               </button>
             </div>
           </div>
 
           {/* Right Column: Authentication Card */}
           <div className="lg:col-span-5">
-            <div className="rounded-3xl bg-gradient-to-b from-slate-900/95 via-[#0b1120] to-[#070b14] border border-slate-700/80 shadow-2xl p-6 sm:p-8 relative backdrop-blur-xl">
+            <div className="rounded-3xl bg-[#0b0f19] border border-white/[0.08] shadow-2xl p-6 sm:p-8 relative">
               
               {/* Card Header */}
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800">
-                <div className="p-3 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 text-white shadow-lg shadow-indigo-500/30">
-                  <ShieldCheck className="w-6 h-6" />
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/[0.06]">
+                <div className="p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-400">
+                  <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-black text-white flex items-center gap-1.5">
+                  <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-1.5">
                     <span>{lang === 'ar' ? 'تسجيل الدخول وإنشاء الحساب' : 'Sign In & Engineer Registration'}</span>
                   </h2>
                   <p className="text-xs text-slate-400">
@@ -338,26 +337,26 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               </div>
 
               {/* Progress Steps */}
-              <div className="flex items-center justify-between mb-6 px-3 py-2 rounded-2xl bg-slate-950 border border-slate-800 text-xs">
-                <div className={`flex items-center gap-1.5 font-bold ${step === 'email' ? 'text-cyan-400' : 'text-emerald-400'}`}>
-                  <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px]">1</span>
+              <div className="flex items-center justify-between mb-6 px-3 py-2 rounded-xl bg-black/30 border border-white/[0.06] text-xs">
+                <div className={`flex items-center gap-1.5 font-bold ${step === 'email' ? 'text-amber-400' : 'text-emerald-400'}`}>
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step === 'email' ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'}`}>1</span>
                   <span>{lang === 'ar' ? 'البريد' : 'Email'}</span>
                 </div>
-                <div className="h-px w-6 bg-slate-800" />
-                <div className={`flex items-center gap-1.5 font-bold ${step === 'verify' ? 'text-cyan-400' : step === 'profile' ? 'text-emerald-400' : 'text-slate-500'}`}>
-                  <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px]">2</span>
+                <div className="h-px w-6 bg-white/[0.08]" />
+                <div className={`flex items-center gap-1.5 font-bold ${step === 'verify' ? 'text-amber-400' : step === 'profile' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step === 'verify' ? 'bg-amber-500/20 text-amber-300' : step === 'profile' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/[0.04] text-slate-500'}`}>2</span>
                   <span>{lang === 'ar' ? 'رمز التحقق' : 'Verify'}</span>
                 </div>
-                <div className="h-px w-6 bg-slate-800" />
-                <div className={`flex items-center gap-1.5 font-bold ${step === 'profile' ? 'text-cyan-400' : 'text-slate-500'}`}>
-                  <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px]">3</span>
+                <div className="h-px w-6 bg-white/[0.08]" />
+                <div className={`flex items-center gap-1.5 font-bold ${step === 'profile' ? 'text-amber-400' : 'text-slate-500'}`}>
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step === 'profile' ? 'bg-amber-500/20 text-amber-300' : 'bg-white/[0.04] text-slate-500'}`}>3</span>
                   <span>{lang === 'ar' ? 'الملف المهني' : 'Profile'}</span>
                 </div>
               </div>
 
               {/* Error Message */}
               {errorMsg && (
-                <div className="mb-5 p-3.5 rounded-2xl bg-rose-950/50 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2.5">
+                <div className="mb-5 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs flex items-center gap-2.5">
                   <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
                   <span>{errorMsg}</span>
                 </div>
@@ -371,7 +370,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                       {lang === 'ar' ? 'البريد الإلكتروني المهني أو الشخصي:' : 'Work or Personal Email:'}
                     </label>
                     <div className="relative">
-                      <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                      <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                       <input
                         type="email"
                         value={email}
@@ -379,7 +378,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                         placeholder="engineer@example.com"
                         required
                         autoFocus
-                        className="w-full pr-11 pl-4 py-3 rounded-2xl bg-slate-950 border border-slate-700 text-white placeholder:text-slate-600 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono dir-ltr text-right"
+                        className="w-full pr-11 pl-4 py-3 rounded-xl bg-black/40 border border-white/[0.1] text-white placeholder:text-slate-600 text-sm focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/30 transition-all font-mono dir-ltr text-right"
                       />
                     </div>
                     <p className="text-[11px] text-slate-400 mt-2">
@@ -392,7 +391,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-extrabold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50 mt-4 cursor-pointer"
+                    className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-sm shadow-md shadow-amber-500/15 flex items-center justify-center gap-2 transition-all disabled:opacity-50 mt-4 cursor-pointer"
                   >
                     {isSubmitting ? (
                       <RefreshCw className="w-4 h-4 animate-spin" />
@@ -406,7 +405,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
                   <div className="text-center pt-2">
                     <span className="text-[11px] text-slate-500">
-                      {lang === 'ar' ? '🔒 جميع البيانات مشفرة ومحفوظة محلياً لأمان دراستك' : '🔒 All progress & notes are securely stored for your account'}
+                      {lang === 'ar' ? 'جميع البيانات مشفرة ومحفوظة محلياً لأمان دراستك' : 'All progress & notes are securely stored for your account'}
                     </span>
                   </div>
                 </form>
@@ -416,25 +415,25 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               {step === 'verify' && (
                 <form onSubmit={handleVerifySubmit} className="space-y-4">
                   {/* Toast simulated code info */}
-                  <div className="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 space-y-2">
-                    <div className="flex items-center justify-between text-xs text-emerald-400 font-bold">
+                  <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08] space-y-2">
+                    <div className="flex items-center justify-between text-xs text-slate-300 font-bold">
                       <span className="flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle2 className="w-4 h-4 text-amber-400" />
                         <span>{lang === 'ar' ? 'تم تجهيز رمز التحقق لبريدك:' : 'Verification code for:'}</span>
                       </span>
-                      <span className="text-slate-300 font-mono text-[11px]">{email}</span>
+                      <span className="text-amber-400 font-mono text-[11px]">{email}</span>
                     </div>
 
-                    {/* Quick Demo Helper */}
-                    <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-2">
+                    {/* Quick Helper */}
+                    <div className="p-2.5 rounded-lg bg-black/40 border border-white/[0.06] flex items-center justify-between gap-2">
                       <div className="space-y-0.5">
                         <div className="text-[10px] text-slate-400">{lang === 'ar' ? 'رمز التأكيد الفوري:' : 'Your Instant Code:'}</div>
-                        <div className="text-sm font-mono font-black text-cyan-300 tracking-widest">{generatedCode}</div>
+                        <div className="text-sm font-mono font-black text-amber-400 tracking-widest">{generatedCode}</div>
                       </div>
                       <button
                         type="button"
                         onClick={copyAndFillCode}
-                        className="px-3 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/30 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                        className="px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 border border-white/[0.1] text-xs font-bold flex items-center gap-1 cursor-pointer transition-all"
                       >
                         {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                         <span>{lang === 'ar' ? 'تعبئة تلقائية' : 'Auto Fill'}</span>
@@ -447,7 +446,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                       {lang === 'ar' ? 'أدخل رمز التحقق (6 أرقام):' : 'Enter 6-Digit Verification Code:'}
                     </label>
                     <div className="relative">
-                      <KeyRound className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                      <KeyRound className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                       <input
                         type="text"
                         maxLength={6}
@@ -456,7 +455,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                         placeholder="••••••"
                         required
                         autoFocus
-                        className="w-full pr-11 pl-4 py-3 rounded-2xl bg-slate-950 border border-slate-700 text-cyan-300 placeholder:text-slate-600 text-lg font-mono font-bold tracking-widest text-center focus:outline-none focus:border-cyan-500 transition-all"
+                        className="w-full pr-11 pl-4 py-3 rounded-xl bg-black/40 border border-white/[0.1] text-amber-400 placeholder:text-slate-600 text-lg font-mono font-bold tracking-widest text-center focus:outline-none focus:border-amber-500/80 transition-all"
                       />
                     </div>
                   </div>
@@ -477,7 +476,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                       <button
                         type="button"
                         onClick={() => sendVerificationCode(email)}
-                        className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors cursor-pointer"
+                        className="text-amber-400 hover:text-amber-300 font-bold transition-colors cursor-pointer"
                       >
                         {lang === 'ar' ? 'إعادة إرسال الرمز الآن' : 'Resend code now'}
                       </button>
@@ -487,7 +486,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   <button
                     type="submit"
                     disabled={isSubmitting || verificationCode.length < 6}
-                    className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-extrabold text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
+                    className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-sm shadow-md shadow-amber-500/15 flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
                   >
                     {isSubmitting ? (
                       <RefreshCw className="w-4 h-4 animate-spin" />
@@ -509,7 +508,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                       {lang === 'ar' ? 'اسم المهندس / اللقب الأكاديمي:' : 'Engineer Name / Title:'}
                     </label>
                     <div className="relative">
-                      <User className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                      <User className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                       <input
                         type="text"
                         value={name}
@@ -517,7 +516,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                         placeholder={lang === 'ar' ? 'م. حيدر أحمد' : 'Eng. Hayder'}
                         required
                         autoFocus
-                        className="w-full pr-11 pl-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:border-cyan-500 transition-all"
+                        className="w-full pr-11 pl-4 py-2.5 rounded-xl bg-black/40 border border-white/[0.1] text-white text-sm focus:outline-none focus:border-amber-500/80 transition-all"
                       />
                     </div>
                   </div>
@@ -527,19 +526,19 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                     <label className="block text-xs font-bold text-slate-300 mb-2">
                       {lang === 'ar' ? 'اختر الصورة الرمزية للمهندس:' : 'Select Engineer Avatar:'}
                     </label>
-                    <div className="flex items-center justify-between gap-2 p-2 rounded-2xl bg-slate-950 border border-slate-800">
+                    <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-black/40 border border-white/[0.08]">
                       {AVATAR_OPTIONS.map((av, idx) => (
                         <button
                           key={idx}
                           type="button"
                           onClick={() => setSelectedAvatar(av)}
-                          className={`p-1 rounded-xl transition-all cursor-pointer ${
+                          className={`p-1 rounded-lg transition-all cursor-pointer ${
                             selectedAvatar === av
-                              ? 'bg-indigo-600 ring-2 ring-cyan-400 scale-105'
-                              : 'opacity-60 hover:opacity-100 hover:bg-slate-800'
+                              ? 'bg-amber-500/20 border border-amber-500/60 ring-1 ring-amber-500/30'
+                              : 'opacity-50 hover:opacity-100 hover:bg-white/[0.05]'
                           }`}
                         >
-                          <img src={av} alt={`Avatar ${idx}`} className="w-9 h-9 rounded-lg" />
+                          <img src={av} alt={`Avatar ${idx}`} className="w-8 h-8 rounded-md" />
                         </button>
                       ))}
                     </div>
@@ -562,12 +561,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                           onClick={() => setTargetTrack(t.id as CurriculumTrack)}
                           className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
                             targetTrack === t.id
-                              ? 'bg-indigo-600/30 border-cyan-400 text-white font-bold shadow-md shadow-indigo-600/30'
-                              : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                              ? 'bg-amber-500/15 border-amber-500/50 text-white font-bold'
+                              : 'bg-black/30 border-white/[0.06] text-slate-400 hover:border-white/[0.12]'
                           }`}
                         >
-                          <div className="text-xs font-bold text-cyan-300">{t.label}</div>
-                          <div className="text-[10px] font-mono text-slate-400">{t.code}</div>
+                          <div className="text-xs font-bold text-amber-400">{t.label}</div>
+                          <div className="text-[10px] font-mono text-slate-300">{t.code}</div>
                           <div className="text-[9px] text-slate-500 mt-0.5">{t.desc}</div>
                         </button>
                       ))}
@@ -576,9 +575,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
                   <button
                     type="submit"
-                    className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-cyan-600 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white font-extrabold text-sm shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all mt-2 cursor-pointer"
+                    className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-sm shadow-md shadow-amber-500/15 flex items-center justify-center gap-2 transition-all mt-2 cursor-pointer"
                   >
-                    <span>{lang === 'ar' ? 'دخول المنصة وبدء الدراسة 🚀' : 'Launch Learning Portal 🚀'}</span>
+                    <span>{lang === 'ar' ? 'دخول المنصة وبدء الدراسة' : 'Launch Learning Portal'}</span>
                     <ArrowLeft className="w-4 h-4" />
                   </button>
                 </form>
@@ -589,7 +588,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 max-w-7xl w-full mx-auto p-4 sm:p-6 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+      <footer className="relative z-10 max-w-7xl w-full mx-auto p-4 sm:p-6 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
         <div>
           {lang === 'ar' 
             ? '© منصة الفريق السومري للتعلم — جميع المعايير مطابقة لمناهج سيسكو الرسمية و RFC'

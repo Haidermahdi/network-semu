@@ -13,16 +13,21 @@ import {
   BookOpen
 } from 'lucide-react';
 import { CISCO_CLI_RESPONSES } from '../data/ciscoCliDatabase';
+import { Language } from '../types';
 
 interface CiscoCliTerminalProps {
   initialDevice?: string;
+  lang?: Language;
 }
 
 export const CiscoCliTerminal: React.FC<CiscoCliTerminalProps> = ({
-  initialDevice = 'R1-CORE-ROUTER'
+  initialDevice = 'R1-CORE-ROUTER',
+  lang = 'ar'
 }) => {
   const [currentDevice, setCurrentDevice] = useState<string>(initialDevice);
   const [commandInput, setCommandInput] = useState('');
+  const isEn = lang === 'en';
+
   const [history, setHistory] = useState<Array<{
     type: 'input' | 'output' | 'info';
     text: string;
@@ -74,13 +79,17 @@ export const CiscoCliTerminal: React.FC<CiscoCliTerminalProps> = ({
     const matchedResponse = CISCO_CLI_RESPONSES[currentDevice]?.[cmd.toLowerCase()];
 
     if (matchedResponse) {
+      const exp = isEn 
+        ? (matchedResponse.explanationEn || matchedResponse.explanationAr)
+        : (matchedResponse.explanationAr || matchedResponse.explanationEn);
+
       setHistory(prev => [
         ...prev,
         { type: 'input', text: cmd, prompt: promptStr },
         { 
           type: 'output', 
           text: matchedResponse.output,
-          explanation: matchedResponse.explanationAr 
+          explanation: exp
         }
       ]);
     } else {
@@ -111,13 +120,15 @@ export const CiscoCliTerminal: React.FC<CiscoCliTerminalProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir={isEn ? 'ltr' : 'rtl'}>
       {/* Device Selector & Quick Command Bar */}
       <div className="p-3 bg-slate-900/90 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow-lg">
         {/* Device Switcher */}
         <div className="flex items-center gap-2">
           <Server className="w-4 h-4 text-cyan-400" />
-          <span className="text-xs font-bold text-slate-300">اختر جهاز سيسكو:</span>
+          <span className="text-xs font-bold text-slate-300">
+            {isEn ? 'Select Cisco Device:' : 'اختر جهاز سيسكو:'}
+          </span>
           <div className="flex gap-1.5">
             {deviceList.map(dev => (
               <button
@@ -143,7 +154,9 @@ export const CiscoCliTerminal: React.FC<CiscoCliTerminalProps> = ({
 
         {/* Preset Show Commands Quick-Buttons */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[11px] text-slate-400 font-bold">أوامر سريعة:</span>
+          <span className="text-[11px] text-slate-400 font-bold">
+            {isEn ? 'Quick Commands:' : 'أوامر سريعة:'}
+          </span>
           {availableCommands.slice(0, 4).map(cmd => (
             <button
               key={cmd}
@@ -176,7 +189,7 @@ export const CiscoCliTerminal: React.FC<CiscoCliTerminalProps> = ({
 
           <button
             onClick={() => setHistory([])}
-            title="مسح الشاشة"
+            title={isEn ? 'Clear Screen' : 'مسح الشاشة'}
             className="p-1 rounded bg-slate-800 text-slate-400 hover:text-slate-200"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -200,7 +213,7 @@ export const CiscoCliTerminal: React.FC<CiscoCliTerminalProps> = ({
                     {item.text}
                   </pre>
                   {item.explanation && (
-                    <div className="p-2.5 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-indigo-200 text-xs font-sans dir-rtl text-right flex items-start gap-2">
+                    <div className={`p-2.5 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-indigo-200 text-xs font-sans flex items-start gap-2 ${isEn ? 'dir-ltr text-left' : 'dir-rtl text-right'}`}>
                       <BookOpen className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
                       <span>{item.explanation}</span>
                     </div>
@@ -226,7 +239,7 @@ export const CiscoCliTerminal: React.FC<CiscoCliTerminalProps> = ({
               onChange={(e) => setCommandInput(e.target.value)}
               onKeyDown={handleKeyDown}
               className="flex-1 bg-transparent border-none outline-none text-white font-mono text-xs focus:ring-0 p-0"
-              placeholder="اكتب أمر سيسكو (مثال: show ip route) أو اضغط Tab للإكمال..."
+              placeholder={isEn ? 'Type Cisco command (e.g. show ip route) or press Tab to autocomplete...' : 'اكتب أمر سيسكو (مثال: show ip route) أو اضغط Tab للإكمال...'}
               autoFocus
             />
             <button

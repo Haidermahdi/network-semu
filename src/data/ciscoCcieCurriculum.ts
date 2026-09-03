@@ -330,7 +330,7 @@ SITE_HQ        00:00:08  yes    10.255.0.12:4342     192.168.10.46/32 (RLOC: 10.
 
 ### 3. تقنية التعافي الفوري (Topology Independent Loop-Free Alternate - TI-LFA):
 - توفر حماية بديلة بنسبة **100%** ضد سقوط أي رابط أو عقدة في أي طوبولوجيا شبكية.
-- تحسب المسار البديل وتجهزه في عتاد الـ ASIC مسبقاً، ويتم التحويل إليه في **أقل من 50 مللي ثانية (Sub-50ms Failover)** فور انقطاع الرابط الأساسي!`,
+- تحسب المسار البديل وتجهزه في رقاقات الـ ASIC مسبقاً، ويتم التحويل إليه في **أقل من 50 مللي ثانية (Sub-50ms Failover)** فور انقطاع الرابط الأساسي!`,
         contentMarkdownEn: `### 1. Segment Routing Building Blocks:
 - **SRGB (Segment Routing Global Block):** Default 16000 to 23999.
 - **Prefix-SID:** Global locator advertised via IS-IS/OSPF.
@@ -396,13 +396,13 @@ Prefix                SID Type    Index    Label (SRGB: 16000-23999)
     unitTitleEn: 'Unit 4: Advanced Security & Services: 802.1X Dynamic Auth, MACsec (802.1AE) & MQC Hierarchical QoS',
     moduleBadge: 'CCIE Domain 4.0',
     officialDomain: '4.0 Security & Network Services (15% of CCIE Lab Blueprint)',
-    summaryAr: 'تأمين الشبكات الصفرية (Zero-Trust Access): مصادقة الأجهزة بـ IEEE 802.1X مع Cisco ISE و MAB، تشفير الروابط الفيزيائية بسرعة العتاد بـ MACsec (IEEE 802.1AE 256-bit)، وهيكلية جودة الخدمة الهرمية Hierarchical QoS (HQoS).',
+    summaryAr: 'تأمين الشبكات الصفرية (Zero-Trust Access): مصادقة الأجهزة بـ IEEE 802.1X مع Cisco ISE و MAB، تشفير الروابط الفيزيائية بسرعة الرقاقات المباشرة بـ MACsec (IEEE 802.1AE 256-bit)، وهيكلية جودة الخدمة الهرمية Hierarchical QoS (HQoS).',
     summaryEn: 'Enterprise Zero-Trust defense: Port-based authentication with IEEE 802.1X and MAC Authentication Bypass (MAB), line-rate Layer 2 encryption with MACsec (802.1AE 128/256-bit with MKA), and 3-level Hierarchical QoS (HQoS) traffic scheduling.',
     topics: [
       {
         id: 'ccie-topic-4-1-8021x-macsec-layer2-encryption',
         track: 'ccie',
-        titleAr: '4.1 مصادقة الأجهزة 802.1X وتشفير الروابط العتادي MACsec (IEEE 802.1AE)',
+        titleAr: '4.1 مصادقة الأجهزة 802.1X وتشفير الروابط المادي MACsec (IEEE 802.1AE)',
         titleEn: '4.1 Zero-Trust Layer 2 Defense: IEEE 802.1X Authentication, MAB, MKA & MACsec Link Encryption',
         level: 'CCIE',
         ciscoBlueprintRef: 'CCIE v1.1 Blueprint §4.1 & §4.2',
@@ -411,7 +411,7 @@ Prefix                SID Type    Index    Label (SRGB: 16000-23999)
           { title: 'IEEE 802.1X-2020 - Port-Based Network Access Control', type: 'IEEE Standard', code: 'IEEE 802.1X', citation: 'EAP Authentication Framework' },
           { title: 'Cisco Press Network Access Control with Cisco ISE', type: 'Cisco Press', code: 'ISBN: 978-1587144462', citation: 'Identity Services Engine Architecture' }
         ],
-        summaryAr: 'منع اختراق المنافذ والتنصت على كوابل الألياف: مصادقة المستخدمين بـ 802.1X / EAP-TLS، واستخدام MAC Authentication Bypass (MAB) لطابعات وإنترنت الأشياء، وتشفير كافة الفريمات بسرعة 100Gbps عتادياً بـ MACsec مع بروتوكول تبادل المفاتيح MKA.',
+        summaryAr: 'منع اختراق المنافذ والتنصت على كوابل الألياف: مصادقة المستخدمين بـ 802.1X / EAP-TLS، واستخدام MAC Authentication Bypass (MAB) لطابعات وإنترنت الأشياء، وتشفير كافة الفريمات بسرعة 100Gbps عبر الرقاقات المادية بـ MACsec مع بروتوكول تبادل المفاتيح MKA.',
         summaryEn: 'Hardening enterprise campus edges: IEEE 802.1X Extensible Authentication Protocol (EAP-TLS/PEAP), MAC Authentication Bypass fallback, and line-rate hardware frame encryption with IEEE 802.1AE MACsec using MACsec Key Agreement (MKA).',
         contentMarkdownAr: `### 1. أركان مصادقة الـ 802.1X الثلاثة:
 1. **Supplicant (العميل):** البرنامج أو نظام التشغيل على جهاز المستخدم (Windows/macOS/Linux) الذي يرسل طلب المصادقة.
@@ -420,9 +420,9 @@ Prefix                SID Type    Index    Label (SRGB: 16000-23999)
 
 ---
 
-### 2. تشفير الطبقة الثانية العتادي MACsec (IEEE 802.1AE):
+### 2. تشفير الطبقة الثانية على مستوى الرقاقات المادية MACsec (IEEE 802.1AE):
 - بينما يشفر IPsec الطبقة الثالثة فقط، يقوم **MACsec** بتشفير فريم الطبقة الثانية بالكامل (من بعد ترويسة MAC وحتى الـ Payload) باستخدام خوارزميات **AES-GCM-128 / AES-GCM-256**.
-- ينفذ التشفير داخل رقاقات السويتش العتادية (Line-Rate Crypto ASICs) بدون أي تأخير (Zero-Latency) عبر روابط 10G/40G/100G.
+- ينفذ التشفير داخل رقاقات السويتش المادية (Line-Rate Crypto ASICs) بدون أي تأخير (Zero-Latency) عبر روابط 10G/40G/100G.
 - بروتوكول **MACsec Key Agreement (MKA)** يدير توليد وتبديل مفاتيح التشفير تلقائياً وبأمان فائق.`,
         contentMarkdownEn: `### 1. 802.1X & MACsec Mechanics:
 - **802.1X:** Port remains unauthorized until EAP-TLS/PEAP exchange succeeds with Cisco ISE.

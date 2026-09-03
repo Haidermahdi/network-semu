@@ -177,7 +177,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                       {item.icon}
                     </span>
                     {!collapsed && (
-                      <span className="truncate text-right flex-1 text-[13px]">
+                      <span className={`truncate flex-1 text-[13px] ${isRtl ? 'text-right' : 'text-left'}`}>
                         {lang === 'ar' ? item.labelAr : item.labelEn}
                       </span>
                     )}

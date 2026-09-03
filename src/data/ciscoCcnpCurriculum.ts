@@ -16,13 +16,13 @@ export const CCNP_CURRICULUM_MODULES: CurriculumSection[] = [
     unitTitleEn: 'Unit 1: Dual-Stack Architecture, Hardware Forwarding (CEF/TCAM) & High Availability',
     moduleBadge: 'ENCOR Domain 1.0',
     officialDomain: '1.0 Architecture & High Availability (15% of Exam)',
-    summaryAr: 'بنية التوجيه العتادي Cisco Express Forwarding (CEF)، جداول الـ TCAM والـ FIB، تقنيات التبديل الحي الفوري Stateful Switchover (SSO) و Non-Stop Forwarding (NSF)، والافتراضية بـ StackWise Virtual.',
+    summaryAr: 'بنية التوجيه فائق السرعة عبر الرقاقات المادية Cisco Express Forwarding (CEF)، جداول الـ TCAM والـ FIB، تقنيات التبديل الحي الفوري Stateful Switchover (SSO) و Non-Stop Forwarding (NSF)، والافتراضية بـ StackWise Virtual.',
     summaryEn: 'Dissection of Cisco Express Forwarding (CEF), FIB and Adjacency tables, TCAM hardware lookup architecture, Stateful Switchover (SSO), NSF, and StackWise Virtual chassis clustering.',
     topics: [
       {
         id: 'ccnp-topic-1-1-cef-tcam-hardware-forwarding',
         track: 'ccnp',
-        titleAr: '1.1 بنية التمرير العتادي فائق السرعة (Cisco CEF, FIB, Adjacency Table & TCAM)',
+        titleAr: '1.1 بنية التمرير فائق السرعة عبر الرقاقات المادية (Cisco CEF, FIB, Adjacency Table & TCAM)',
         titleEn: '1.1 Hardware Forwarding Engines: Cisco Express Forwarding (CEF), FIB, Adjacency & TCAM',
         level: 'CCNP',
         ciscoBlueprintRef: 'ENCOR 350-401 §1.1 & §1.2',
@@ -35,14 +35,14 @@ export const CCNP_CURRICULUM_MODULES: CurriculumSection[] = [
         contentMarkdownAr: `### 1. تطور محركات التوجيه في سيسكو (Switching Evolution):
 1. **Process Switching (الأبطأ):** كل حزمة منفردة تذهب للمعالج الرئيسي (CPU)، الذي يقوم بفك الترويسة واستشارة الـ Routing Table وإعادة حساب الـ Checksum.
 2. **Fast Switching (Route-Once, Switch-Many):** أول حزمة تعالج بالمعالج، ثم تخزن النتيجة في Route Cache لتمرير باقي حزم نفس الجلسة بالـ ASIC.
-3. **Cisco Express Forwarding - CEF (المعيار الحديث):** معالجة عتادية 100% مبنية مسبقاً (Pre-computed Hardware Tables) دون انتظار وصول أي حزمة!
+3. **Cisco Express Forwarding - CEF (المعيار الحديث):** معالجة مادية 100% مبنية مسبقاً عبر الرقاقات الإلكترونية (Pre-computed Hardware Tables) دون انتظار وصول أي حزمة!
 
 ---
 
 ### 2. بنية جداول الـ CEF:
-- **Forwarding Information Base (FIB):** نسخة طبق الأصل من الـ Routing Table ولكنها منظمة كشجرة بحث ثنائية سريعة جداً (mtree) ومحسوبة مسبقاً في عتاد السويتش.
+- **Forwarding Information Base (FIB):** نسخة طبق الأصل من الـ Routing Table ولكنها منظمة كشجرة بحث ثنائية سريعة جداً (mtree) ومحسوبة مسبقاً في رقاقات السويتش المادية.
 - **Adjacency Table:** يحفظ ترويسات الطبقة الثانية (Layer 2 MAC Rewrite Headers) لكافة الأجهزة المتصلة المجاورة دون الحاجة لطلب ARP عند وصول الحزمة.
-- **TCAM (Ternary Content Addressable Memory):** ذاكرة عتادية تبحث عن 3 قيم (\`0\` و \`1\` و \`Don't Care X\`) وتنفذ قرارات الـ ACLs والـ QoS والتوجيه في نبضة ساعة واحدة (Single Clock Cycle)!`,
+- **TCAM (Ternary Content Addressable Memory):** ذاكرة إلكترونية فائقة السرعة تبحث عن 3 قيم (\`0\` و \`1\` و \`Don't Care X\`) وتنفذ قرارات الـ ACLs والـ QoS والتوجيه في نبضة ساعة واحدة (Single Clock Cycle)!`,
         contentMarkdownEn: `### 1. CEF Architecture:
 - **FIB (Forwarding Information Base):** Derived from RIB; pre-compiled for ASIC lookup.
 - **Adjacency Table:** Derived from ARP table; holds pre-built Layer 2 rewrite headers.
@@ -77,7 +77,7 @@ show platform hardware fed switch active fwd-asic tcam utilization
         realWorldAnalogy: {
           titleAr: 'جواز السفر الإلكتروني ببوابة المطار الآلية',
           titleEn: 'Biometric E-Gate Passport Scanner vs Manual Customs Officer',
-          storyAr: 'الـ Process Switching يشبه ضابط جمارك يفحص جواز السفر صفحة صفحة ويسألك عن رحلتك (بطيء). أما الـ CEF فيشبه البوابة الإلكترونية البيومترية الذكية: تقرأ بصمتك وتقارنها بقاعدة بيانات عتادية مبرمجة مسبقاً وتفتح البوابة في جزء من الثانية (Line-Rate).',
+          storyAr: 'الـ Process Switching يشبه ضابط جمارك يفحص جواز السفر صفحة صفحة ويسألك عن رحلتك (بطيء). أما الـ CEF فيشبه البوابة الإلكترونية البيومترية الذكية: تقرأ بصمتك وتقارنها بقاعدة بيانات مادية مبرمجة مسبقاً داخل الرقاقات وتفتح البوابة في جزء من الثانية (Line-Rate).',
           storyEn: 'Process switching is a customs border officer manually inspecting each page of every passport. CEF is an automated biometric e-gate that reads your microchip and opens the turnstile in milliseconds using pre-indexed hardware databases.',
           mappingTable: [
             { realLife: 'قاعدة بيانات البوابة الذكية المحسوبة مسبقاً', networkTech: 'CEF Forwarding Information Base (FIB)', ciscoTerm: 'show ip cef' },
@@ -108,7 +108,7 @@ show platform hardware fed switch active fwd-asic tcam utilization
 ---
 
 ### 2. التوجيه المستمر بدون توقف (Non-Stop Forwarding - NSF / Graceful Restart):
-- عندما ينهار معالج الـ Control Plane، يستمر عتاد الـ Data Plane (ASICs) في تمرير الحزم بناءً على جدول الـ FIB الحالي دون توقف.
+- عندما ينهار معالج الـ Control Plane، تستمر رقاقات الـ Data Plane (ASICs) المادية في تمرير الحزم بناءً على جدول الـ FIB الحالي دون توقف.
 - يطلب الراوتر من جيرانه (OSPF/BGP/IS-IS) في رسائل الـ Graceful Restart عدم قطع علاقة الجوار حتى يعيد بناء جدول التوجيه بهدوء.
 
 ---
@@ -704,7 +704,7 @@ interface Tunnel0
         summaryAr: 'منع إسقاط الراوترات عبر هجمات حجب الخدمة (DoS): تطبيق سياسات MQC QoS على مستوى معالج الراوتر (Control Plane Interface) لتقييد وتحديد معدل حزم بروتوكولات الإدارة والـ OSPF والـ BGP وإسقاط الفيضانات الخبيثة.',
         summaryEn: 'Protecting the Route Processor (CPU) from volumetric flooding and DoS attacks using Modular QoS CLI (MQC) filters applied directly to the control-plane interface.',
         contentMarkdownAr: `### 1. لماذا تعتبر حماية الـ Control Plane مسألة حياة أو موت للشبكة؟
-- عندما يرسل مهاجم ملايين طلبات ICMP Ping أو جلسات SSH وهمية أو حزم BGP مزورة، يضطر عتاد السويتش إلى إرسال كل هذه الحزم لمعالج الراوتر (Punt to CPU).
+- عندما يرسل مهاجم ملايين طلبات ICMP Ping أو جلسات SSH وهمية أو حزم BGP مزورة، يضطر السويتش إلى تحويل كل هذه الحزم لمعالج الراوتر (Punt to CPU).
 - إذا وصل استهلاك المعالج إلى 100%، يتوقف الراوتر عن الرد على نبضات التحية (OSPF/BGP Hellos)، فتنهار علاقات الجوار وتسقط شبكة المؤسسة بالكامل!
 
 ---
@@ -738,7 +738,7 @@ control-plane
 \`\`\``,
         technicalHighlights: [
           'أمر control-plane host يسمح بتطبيق سياسات مخصصة للحزم الموجهة لعناوين الراوتر الفيزيائية فقط (Management Plane Protection - MPP).',
-          'ميزة CoPP تنفذ في عتاد السويتش (Hardware Rate Limiter) قبل أن تلمس الحزمة الخبيثة المعالج المركزي نهائياً.'
+          'ميزة CoPP تنفذ عبر رقاقات السويتش المادية (Hardware Rate Limiter) قبل أن تلمس الحزمة الخبيثة المعالج المركزي نهائياً.'
         ],
         ciscoCliOutputs: [
           {

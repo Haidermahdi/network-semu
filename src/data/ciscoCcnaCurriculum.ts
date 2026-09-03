@@ -547,7 +547,7 @@ interface GigabitEthernet0/0/0.20
 ---
 
 ### 2. التوجيه عبر سويتش الطبقة الثالثة (Layer 3 Switch SVI):
-- أسرع بكثير لأن التوجيه يتم على مستوى عتاد السويتش (Hardware ASIC Line Rate) دون خروج الحزم من السويتش:
+- أسرع بكثير لأن التوجيه يتم على مستوى رقاقات السويتش المادية (Hardware ASIC Line Rate) دون خروج الحزم من السويتش:
 \`\`\`cisco
 ip routing
 !
@@ -674,7 +674,7 @@ Gi1/0/3             Desg FWD 19        128.3    P2p Edge (PortFast)`
       {
         id: 'ccna-topic-2-4-etherchannel-lacp-pagp',
         track: 'ccna',
-        titleAr: '2.4 تجميع الروابط والدمج العتادي عبر EtherChannel (LACP vs PAgP)',
+        titleAr: '2.4 تجميع الروابط والدمج الفيزيائي عبر EtherChannel (LACP vs PAgP)',
         titleEn: '2.4 Link Aggregation via EtherChannel (IEEE 802.3ad LACP vs Cisco PAgP)',
         level: 'CCNA',
         ciscoBlueprintRef: 'CCNA 200-301 §2.4',
@@ -790,7 +790,7 @@ interface GigabitEthernet1/0/1
             deviceName: 'SW-ACCESS-01',
             mode: 'priv',
             category: 'Neighbor Discovery',
-            explanationAr: 'عرض قائمة الأجهزة المجاورة المتصلة مباشرة ومنافذ الاتصال ونوع العتاد.',
+            explanationAr: 'عرض قائمة الأجهزة المجاورة المتصلة مباشرة ومنافذ الاتصال ونوع وطراز الجهاز.',
             explanationEn: 'Displays table of directly connected neighboring Cisco devices and local/remote port IDs.',
             output: `Capability Codes: R - Router, T - Trans Bridge, B - Source Route Bridge
                   S - Switch, H - Host, I - IGMP, r - Repeater, P - Phone
@@ -1572,7 +1572,7 @@ interface GigabitEthernet0/0/0
         summaryAr: 'فصل طبقة التحكم (Control Plane) عن طبقة تمرير البيانات (Data Plane): مقارنة التكوين اليدوي عبر CLI بالأتمتة المركزية القائمة على النوايا (Intent-Based Networking) عبر واجهات Southbound و Northbound APIs.',
         summaryEn: 'Decoupling Control Plane from Data Plane, Southbound APIs (NETCONF, RESTCONF, OpenFlow) vs Northbound APIs (REST), and Intent-Based Networking.',
         contentMarkdownAr: `### 1. مستويات الشبكة الثلاثة (Network Planes):
-1. **Data Plane (مستوى البيانات):** تمرير وتحويل الفريمات وحزم البيانات بسرعة العتاد (Hardware ASICs) بناءً على جداول الـ MAC و FIB.
+1. **Data Plane (مستوى البيانات):** تمرير وتحويل الفريمات وحزم البيانات بسرعة المعالجة المادية للرقاقات (Hardware ASICs) بناءً على جداول الـ MAC و FIB.
 2. **Control Plane (مستوى التحكم):** اتخاذ قرارات التوجيه وتبادل معلومات البروتوكولات (OSPF, BGP, STP, ARP) لبناء جداول التوجيه.
 3. **Management Plane (مستوى الإدارة):** إدارة الجهاز ومراقبته (SSH, Telnet, SNMP, HTTPS, Syslog).
 

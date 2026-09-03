@@ -16,7 +16,7 @@ import {
   Trash2,
   Sparkles
 } from 'lucide-react';
-import { CurriculumTrack, UserProfile } from '../types';
+import { CurriculumTrack, UserProfile, Language } from '../types';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -25,6 +25,7 @@ interface UserProfileModalProps {
   onUpdateUser: (updated: UserProfile) => void;
   onLogout: () => void;
   onSwitchTrack: (track: CurriculumTrack) => void;
+  lang?: Language;
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
@@ -33,7 +34,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   user,
   onUpdateUser,
   onLogout,
-  onSwitchTrack
+  onSwitchTrack,
+  lang = 'ar'
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'settings'>('overview');
   const [editingName, setEditingName] = useState(user.name);
@@ -41,6 +43,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [isSaved, setIsSaved] = useState(false);
 
   if (!isOpen) return null;
+  const isEn = lang === 'en';
 
   const handleSaveSettings = () => {
     const updated: UserProfile = {
@@ -66,13 +69,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl bg-gradient-to-b from-slate-900 to-[#0b1120] border border-slate-700/80 shadow-2xl p-6 sm:p-8 text-right font-sans overflow-hidden"
-        dir="rtl"
+        className={`relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl bg-gradient-to-b from-slate-900 to-[#0b1120] border border-slate-700/80 shadow-2xl p-6 sm:p-8 font-sans overflow-hidden ${isEn ? 'text-left' : 'text-right'}`}
+        dir={isEn ? 'ltr' : 'rtl'}
       >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 left-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors"
+          className={`absolute top-5 ${isEn ? 'right-5' : 'left-5'} p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors`}
         >
           <X className="w-5 h-5" />
         </button>
@@ -85,7 +88,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               alt={user.name} 
               className="w-16 h-16 rounded-2xl bg-slate-800 p-1 border-2 border-cyan-500/50 shadow-lg shadow-cyan-500/20"
             />
-            <div className="absolute -bottom-1 -right-1 p-1 bg-emerald-500 rounded-full border-2 border-slate-900" title="نشط الآن" />
+            <div className="absolute -bottom-1 -right-1 p-1 bg-emerald-500 rounded-full border-2 border-slate-900" title={isEn ? 'Active Now' : 'نشط الآن'} />
           </div>
 
           <div className="flex-1 min-w-0">
@@ -95,15 +98,15 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 {user.track.toUpperCase()}
               </span>
             </div>
-            <p className="text-xs text-slate-400 font-mono mt-0.5 dir-ltr text-right">{user.email}</p>
+            <p className={`text-xs text-slate-400 font-mono mt-0.5 ${isEn ? 'text-left' : 'text-right'}`}>{user.email}</p>
             <div className="flex items-center gap-4 text-xs text-slate-400 mt-2">
               <span className="flex items-center gap-1 text-amber-400 font-bold">
                 <Flame className="w-3.5 h-3.5" />
-                <span>حماسة الدراسة: {user.studyStreakDays} يوم متتالي</span>
+                <span>{isEn ? `Study Streak: ${user.studyStreakDays} days` : `حماسة الدراسة: ${user.studyStreakDays} يوم متتالي`}</span>
               </span>
               <span className="flex items-center gap-1 text-slate-500">
                 <Calendar className="w-3.5 h-3.5" />
-                <span>عضو منذ {user.joinedDate}</span>
+                <span>{isEn ? `Member since ${user.joinedDate}` : `عضو منذ ${user.joinedDate}`}</span>
               </span>
             </div>
           </div>
@@ -119,7 +122,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            نظرة عامة والإنجازات
+            {isEn ? 'Overview & Achievements' : 'نظرة عامة والإنجازات'}
           </button>
           <button
             onClick={() => setActiveTab('notes')}
@@ -129,7 +132,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            ملاحظاتي على الكتب ({Object.keys(user.personalNotes || {}).length})
+            {isEn ? `My Book Notes (${Object.keys(user.personalNotes || {}).length})` : `ملاحظاتي على الكتب (${Object.keys(user.personalNotes || {}).length})`}
           </button>
           <button
             onClick={() => setActiveTab('settings')}
@@ -139,7 +142,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            إعدادات الحساب والمسار
+            {isEn ? 'Account & Track Settings' : 'إعدادات الحساب والمسار'}
           </button>
         </div>
 
@@ -153,21 +156,27 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   <div className="text-2xl font-black text-cyan-400 font-mono">
                     {user.completedTopicIds.length}
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-1">مواضيع مكتملة</div>
+                  <div className="text-[11px] text-slate-400 mt-1">
+                    {isEn ? 'Completed Topics' : 'مواضيع مكتملة'}
+                  </div>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 text-center">
                   <div className="text-2xl font-black text-amber-400 font-mono">
                     {Object.values(user.readPagesRecord || {}).reduce((acc, curr) => acc + curr.length, 0)}
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-1">صفحات كتاب مقروءة</div>
+                  <div className="text-[11px] text-slate-400 mt-1">
+                    {isEn ? 'Chapters Read' : 'صفحات كتاب مقروءة'}
+                  </div>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 text-center">
                   <div className="text-2xl font-black text-emerald-400 font-mono">
                     {user.bookmarkedTopicIds.length}
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-1">مواضيع مفضلة</div>
+                  <div className="text-[11px] text-slate-400 mt-1">
+                    {isEn ? 'Bookmarked' : 'مواضيع مفضلة'}
+                  </div>
                 </div>
               </div>
 
@@ -175,10 +184,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
                 <h3 className="text-xs font-bold text-white flex items-center gap-2">
                   <Award className="w-4 h-4 text-indigo-400" />
-                  <span>المسار الحالي: {currentBadge.title}</span>
+                  <span>{isEn ? `Current Track: ${currentBadge.title}` : `المسار الحالي: ${currentBadge.title}`}</span>
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  تتقدم حالياً في دراسة مواضيع ومختبرات شهادة سيسكو الرسمية. استمر في قراءة صفحات الكتب ومراجعة سيناريوهات CLI والمختبرات الحية لتحقيق الجاهزية الكاملة للامتحان.
+                  {isEn 
+                    ? 'You are actively advancing through official Cisco certification topics and practical simulations. Keep studying book chapters, running CLI scenarios, and experimenting in the live lab to reach complete exam readiness.'
+                    : 'تتقدم حالياً في دراسة مواضيع ومختبرات شهادة سيسكو الرسمية. استمر في قراءة صفحات الكتب ومراجعة سيناريوهات CLI والمختبرات الحية لتحقيق الجاهزية الكاملة للامتحان.'}
                 </p>
               </div>
             </div>
@@ -189,13 +200,17 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               {Object.keys(user.personalNotes || {}).length === 0 ? (
                 <div className="py-12 text-center text-slate-500 text-xs">
                   <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p>لا توجد ملاحظات مدونة بعد. يمكنك تدوين ملاحظاتك أثناء تصفح صفحات الكتب لأي موضوع.</p>
+                  <p>
+                    {isEn 
+                      ? 'No personal notes yet. You can jot down notes while reading book chapters for any topic.'
+                      : 'لا توجد ملاحظات مدونة بعد. يمكنك تدوين ملاحظاتك أثناء تصفح صفحات الكتب لأي موضوع.'}
+                  </p>
                 </div>
               ) : (
                 Object.entries(user.personalNotes).map(([topicId, noteText]) => (
                   <div key={topicId} className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1.5">
                     <div className="text-xs font-bold text-cyan-300 flex items-center justify-between">
-                      <span>موضوع: {topicId}</span>
+                      <span>{isEn ? `Topic: ${topicId}` : `موضوع: ${topicId}`}</span>
                     </div>
                     <p className="text-xs text-slate-300 whitespace-pre-wrap">{noteText}</p>
                   </div>
@@ -208,7 +223,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-2">
-                  اسم المهندس:
+                  {isEn ? 'Engineer Name:' : 'اسم المهندس:'}
                 </label>
                 <input
                   type="text"
@@ -220,7 +235,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-2">
-                  تغيير المسار المعتمد:
+                  {isEn ? 'Target Certification Track:' : 'تغيير المسار المعتمد:'}
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {(['ccna', 'ccnp', 'ccie'] as CurriculumTrack[]).map((t) => (
@@ -247,7 +262,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold text-xs flex items-center gap-2 cursor-pointer shadow-md"
                 >
                   <Save className="w-4 h-4" />
-                  <span>{isSaved ? 'تم حفظ التعديلات!' : 'حفظ التغييرات'}</span>
+                  <span>{isSaved ? (isEn ? 'Saved!' : 'تم حفظ التعديلات!') : (isEn ? 'Save Changes' : 'حفظ التغييرات')}</span>
                 </button>
               </div>
             </div>
@@ -264,14 +279,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             className="px-4 py-2 rounded-xl text-rose-400 hover:bg-rose-950/40 border border-rose-500/30 text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
-            <span>تسجيل الخروج من المنصة</span>
+            <span>{isEn ? 'Log Out' : 'تسجيل الخروج من المنصة'}</span>
           </button>
 
           <button
             onClick={onClose}
             className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors cursor-pointer"
           >
-            إغلاق
+            {isEn ? 'Close' : 'إغلاق'}
           </button>
         </div>
       </div>

@@ -127,7 +127,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, lang 
           },
           table: ({ children }) => (
             <div className="my-4 overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
-              <table className="w-full text-right border-collapse bg-[var(--bg-surface)]">{children}</table>
+              <table className={`w-full ${lang === 'ar' ? 'text-right' : 'text-left'} border-collapse bg-[var(--bg-surface)]`}>{children}</table>
             </div>
           ),
           thead: ({ children }) => (
@@ -136,13 +136,13 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, lang 
           tbody: ({ children }) => <tbody className="divide-y divide-[var(--border-subtle)]">{children}</tbody>,
           tr: ({ children }) => <tr className="hover:bg-[var(--bg-surface-hover)] transition-colors">{children}</tr>,
           th: ({ children }) => <th className="p-2.5 text-[var(--accent-text)] font-bold whitespace-nowrap body-text">{parseMathAndText(children)}</th>,
-          td: ({ children }) => <td className="p-2.5 body-text border-r border-[var(--border-subtle)] first:border-r-0">{parseMathAndText(children)}</td>,
+          td: ({ children }) => <td className={`p-2.5 body-text ${lang === 'ar' ? 'border-r first:border-r-0' : 'border-l first:border-l-0'} border-[var(--border-subtle)]`}>{parseMathAndText(children)}</td>,
           hr: () => <hr className="section-divider" />,
           blockquote: ({ children }) => (
             <blockquote className="my-4 p-4 surface-active">
               <div className="flex items-center gap-2 label-text mb-2">
                 <Info className="w-3.5 h-3.5" />
-                <span>ملاحظة هندسية</span>
+                <span>{lang === 'ar' ? 'ملاحظة هندسية' : 'Engineering Note'}</span>
               </div>
               <div className="body-text">{parseMathAndText(children)}</div>
             </blockquote>

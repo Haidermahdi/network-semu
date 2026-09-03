@@ -11,7 +11,8 @@ import {
   Activity,
   Layers
 } from 'lucide-react';
-import { MacTableEntry, RoutingTableEntry, ArpTableEntry, NetworkNode } from '../types';
+import { MacTableEntry, RoutingTableEntry, ArpTableEntry, NetworkNode, Language } from '../types';
+import { getLocalizedNodeName } from '../utils/packetTranslations';
 
 interface LiveTablesModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface LiveTablesModalProps {
   macTable: MacTableEntry[];
   routingTable: RoutingTableEntry[];
   arpCache: ArpTableEntry[];
+  lang?: Language;
 }
 
 export const LiveTablesModal: React.FC<LiveTablesModalProps> = ({
@@ -28,8 +30,10 @@ export const LiveTablesModal: React.FC<LiveTablesModalProps> = ({
   selectedNode,
   macTable,
   routingTable,
-  arpCache
+  arpCache,
+  lang = 'ar'
 }) => {
+  const isEn = lang === 'en';
   const [activeTab, setActiveTab] = useState<'mac' | 'routing' | 'arp'>(
     selectedNode?.type === 'switch' ? 'mac' : selectedNode?.type === 'router' ? 'routing' : 'arp'
   );
@@ -38,7 +42,7 @@ export const LiveTablesModal: React.FC<LiveTablesModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-3xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+      <div className={`relative w-full max-w-3xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] ${isEn ? 'text-left dir-ltr' : 'text-right dir-rtl'}`}>
         {/* Modal Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-950/70">
           <div className="flex items-center gap-2">
@@ -47,10 +51,12 @@ export const LiveTablesModal: React.FC<LiveTablesModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-100">
-                مستعرض الجداول الحية (Live Memory Tables Inspector)
+                {isEn ? 'Live Memory Tables Inspector' : 'مستعرض الجداول الحية (Live Memory Tables Inspector)'}
               </h3>
               <p className="text-xs text-slate-400">
-                {selectedNode ? `فحص جهاز: ${selectedNode.arName}` : 'فحص الجداول العتادية وقواعد التوجيه'}
+                {selectedNode 
+                  ? (isEn ? `Inspecting Device: ${getLocalizedNodeName(selectedNode, lang)}` : `فحص جهاز: ${selectedNode.arName || selectedNode.name}`) 
+                  : (isEn ? 'Inspect hardware memory tables, FIB/RIB, and ARP bindings' : 'فحص جداول الذاكرة وقواعد توجيه الأجهزة')}
               </p>
             </div>
           </div>
@@ -64,41 +70,41 @@ export const LiveTablesModal: React.FC<LiveTablesModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-800 bg-slate-950/40 p-2 gap-2">
+        <div className="flex border-b border-slate-800 bg-slate-950/40 p-2 gap-2 overflow-x-auto">
           <button
             onClick={() => setActiveTab('mac')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === 'mac'
                 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
             }`}
           >
             <Network className="w-3.5 h-3.5" />
-            <span>جدول الـ MAC بالسويتش (CAM Table)</span>
+            <span>{isEn ? 'Switch CAM / MAC Table' : 'جدول الـ MAC بالسويتش (CAM Table)'}</span>
           </button>
 
           <button
             onClick={() => setActiveTab('routing')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === 'routing'
                 ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
             }`}
           >
             <Radio className="w-3.5 h-3.5" />
-            <span>جدول التوجيه بالراوتر (Routing Table)</span>
+            <span>{isEn ? 'Router Routing Table (FIB)' : 'جدول التوجيه بالراوتر (Routing Table)'}</span>
           </button>
 
           <button
             onClick={() => setActiveTab('arp')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === 'arp'
                 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
             }`}
           >
             <Laptop className="w-3.5 h-3.5" />
-            <span>ذاكرة الـ ARP Cache بالحواسيب</span>
+            <span>{isEn ? 'Host ARP Cache' : 'ذاكرة الـ ARP Cache بالحواسيب'}</span>
           </button>
         </div>
 
@@ -106,12 +112,15 @@ export const LiveTablesModal: React.FC<LiveTablesModalProps> = ({
         <div className="p-4 overflow-y-auto flex-1 text-xs">
           {activeTab === 'mac' && (
             <div>
-              <div className="mb-3 p-2.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-emerald-200 text-xs">
-                💡 <strong>جدول الـ CAM:</strong> يسجل السويتش هنا عناوين الـ MAC التي يتعلمها من المنافذ لتوجيه الفريمات بسرعة عتادية (L2 ASIC).
+              <div className="mb-3 p-2.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-emerald-200 text-xs leading-relaxed">
+                💡 <strong>{isEn ? 'CAM Table (Switch MAC Table):' : 'جدول الـ CAM (هو نفسه جدول MAC):'}</strong>{' '}
+                {isEn
+                  ? 'The switch records dynamic MAC addresses learned from physical ingress ports to forward frames at line-rate hardware ASIC speeds.'
+                  : 'يسجل السويتش هنا عناوين الـ MAC التي يتعلمها من المنافذ لتوجيه الإطارات بأقصى سرعة معالجة مادية عبر الرقاقات الإلكترونية المباشرة (Hardware ASIC).'}
               </div>
 
               <div className="rounded-xl border border-slate-800 overflow-hidden font-mono">
-                <table className="w-full text-right">
+                <table className={`w-full ${isEn ? 'text-left' : 'text-right'}`}>
                   <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 text-[11px]">
                     <tr>
                       <th className="p-2.5">VLAN</th>
@@ -139,12 +148,15 @@ export const LiveTablesModal: React.FC<LiveTablesModalProps> = ({
 
           {activeTab === 'routing' && (
             <div>
-              <div className="mb-3 p-2.5 rounded-xl bg-indigo-950/20 border border-indigo-500/30 text-indigo-200 text-xs">
-                💡 <strong>جدول التوجيه (FIB/RIB):</strong> خريطة الراوتر لتحديد المنفذ والقفزة التالية (Next-Hop) لكل شبكة فرعية (Subnet).
+              <div className="mb-3 p-2.5 rounded-xl bg-indigo-950/20 border border-indigo-500/30 text-indigo-200 text-xs leading-relaxed">
+                💡 <strong>{isEn ? 'Routing Table (RIB/FIB):' : 'جدول التوجيه (FIB/RIB):'}</strong>{' '}
+                {isEn
+                  ? 'The router navigation map specifying egress interfaces and next-hop IP addresses for each target destination subnet.'
+                  : 'خريطة الراوتر لتحديد المنفذ والقفزة التالية (Next-Hop) لكل شبكة فرعية (Subnet).'}
               </div>
 
               <div className="rounded-xl border border-slate-800 overflow-hidden font-mono">
-                <table className="w-full text-right">
+                <table className={`w-full ${isEn ? 'text-left' : 'text-right'}`}>
                   <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 text-[11px]">
                     <tr>
                       <th className="p-2.5">Proto</th>
@@ -172,12 +184,15 @@ export const LiveTablesModal: React.FC<LiveTablesModalProps> = ({
 
           {activeTab === 'arp' && (
             <div>
-              <div className="mb-3 p-2.5 rounded-xl bg-cyan-950/20 border border-cyan-500/30 text-cyan-200 text-xs">
-                💡 <strong>ذاكرة الـ ARP Cache:</strong> مفكرة الهاتف المخزنة في نظام التشغيل لربط عناوين IP بعناوين MAC الفيزيائية.
+              <div className="mb-3 p-2.5 rounded-xl bg-cyan-950/20 border border-cyan-500/30 text-cyan-200 text-xs leading-relaxed">
+                💡 <strong>{isEn ? 'ARP Cache Table:' : 'ذاكرة الـ ARP Cache:'}</strong>{' '}
+                {isEn
+                  ? 'Local OS memory cache mapping logical L3 IP addresses to physical L2 MAC addresses discovered via broadcast.'
+                  : 'مفكرة الهاتف المخزنة في نظام التشغيل لربط عناوين IP بعناوين MAC الفيزيائية.'}
               </div>
 
               <div className="rounded-xl border border-slate-800 overflow-hidden font-mono">
-                <table className="w-full text-right">
+                <table className={`w-full ${isEn ? 'text-left' : 'text-right'}`}>
                   <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 text-[11px]">
                     <tr>
                       <th className="p-2.5">IP Address</th>
@@ -208,7 +223,7 @@ export const LiveTablesModal: React.FC<LiveTablesModalProps> = ({
             onClick={onClose}
             className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-colors"
           >
-            إغلاق
+            {isEn ? 'Close' : 'إغلاق'}
           </button>
         </div>
       </div>
