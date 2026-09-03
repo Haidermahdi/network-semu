@@ -69,6 +69,7 @@ const NAV_GROUPS: NavGroup[] = [
 interface AppSidebarProps {
   lang: Language;
   currentMode: AppMode;
+  splitPane?: 'none' | 'cli' | 'wireshark';
   onModeChange: (mode: AppMode) => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -81,6 +82,7 @@ interface AppSidebarProps {
 export const AppSidebar: React.FC<AppSidebarProps> = ({
   lang,
   currentMode,
+  splitPane = 'none',
   onModeChange,
   collapsed,
   onToggleCollapse,
@@ -127,16 +129,28 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         )}
       </div>
 
-      {/* Track Badge */}
+      {/* Track Badge & Progress */}
       {!collapsed && (
         <div className="px-4 py-3">
           <div className="px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/5 border border-amber-500/20">
-            <div className="text-[10px] font-bold text-amber-400/80 uppercase tracking-wider">
-              {lang === 'ar' ? 'المسار النشط' : 'Active Track'}
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] font-bold text-amber-400/80 uppercase tracking-wider">
+                {lang === 'ar' ? 'المسار النشط' : 'Active Track'}
+              </div>
+              <div className="text-[10px] font-bold text-amber-400">45%</div>
             </div>
             <div className="text-xs font-black text-white mt-0.5 uppercase">{userProfile.track}</div>
-            <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+            <div className="text-[10px] text-slate-500 font-mono mt-0.5 mb-2">
               {userProfile.track === 'ccna' ? '200-301' : userProfile.track === 'ccnp' ? '350-401' : 'CCIE EI'}
+            </div>
+            {/* Progress Bar */}
+            <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
+              <div 
+                className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full relative"
+                style={{ width: '45%' }}
+              >
+                <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]" />
+              </div>
             </div>
           </div>
         </div>
@@ -156,7 +170,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             )}
             <div className="space-y-0.5">
               {group.items.map((item) => {
-                const isActive = currentMode === item.id;
+                const isActive = currentMode === item.id || splitPane === item.id;
                 return (
                   <button
                     key={item.id}

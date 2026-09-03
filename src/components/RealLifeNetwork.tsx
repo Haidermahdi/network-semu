@@ -38,6 +38,7 @@ import {
   ComponentQuickTooltip, 
   inferDeviceTechnicalProfile 
 } from './NetworkDeviceTooltip';
+import { getLocalizedStory, STATIC_STORIES_TRANSLATIONS } from '../utils/storyTranslations';
 
 interface RealLifeNetworkProps {
   lang?: Language;
@@ -93,11 +94,78 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<StoryCategory>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const activeStory: HumanNetworkStory = HUMAN_NETWORK_STORIES.find(s => s.id === selectedStoryId) || HUMAN_NETWORK_STORIES[0];
+  // Component state to cache dynamically translated stories from Gemini API
+  const [dynamicTranslations, setDynamicTranslations] = useState<Record<string, HumanNetworkStory>>(() => {
+    try {
+      const cached = localStorage.getItem('story_translations_en');
+      return cached ? JSON.parse(cached) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [isTranslating, setIsTranslating] = useState<boolean>(false);
+
+  // Translate active story when language is changed to English
+  useEffect(() => {
+    if (lang !== 'en') return;
+
+    // Check if we already have static translation
+    const hasStatic = selectedStoryId in STATIC_STORIES_TRANSLATIONS;
+    if (hasStatic) return;
+
+    // Check if we already have dynamic translation
+    if (dynamicTranslations[selectedStoryId]) return;
+
+    const storyToTranslate = HUMAN_NETWORK_STORIES.find(s => s.id === selectedStoryId);
+    if (!storyToTranslate) return;
+
+    let isMounted = true;
+    const fetchTranslation = async () => {
+      setIsTranslating(true);
+      try {
+        const response = await fetch('/api/translate-story', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ story: storyToTranslate })
+        });
+        if (!response.ok) throw new Error('API error');
+        const data = await response.json();
+        if (data.status === 'success' && data.story && isMounted) {
+          const updated = { ...dynamicTranslations, [selectedStoryId]: data.story };
+          setDynamicTranslations(updated);
+          localStorage.setItem('story_translations_en', JSON.stringify(updated));
+        }
+      } catch (err) {
+        console.warn("Failed to translate via Gemini API, using local fallback", err);
+      } finally {
+        if (isMounted) setIsTranslating(false);
+      }
+    };
+
+    fetchTranslation();
+    return () => { isMounted = false; };
+  }, [selectedStoryId, lang, dynamicTranslations]);
+
+  // Get localized stories using static mappings or dynamic translations
+  const localizedNetworkStories = React.useMemo(() => {
+    return HUMAN_NETWORK_STORIES.map(story => {
+      if (lang === 'ar') return story;
+      
+      // 1. If we have a dynamic Gemini translation, prefer it
+      if (dynamicTranslations[story.id]) {
+        return dynamicTranslations[story.id];
+      }
+      // 2. Otherwise, use static pre-translation or structural fallback
+      return getLocalizedStory(story, lang);
+    });
+  }, [lang, dynamicTranslations]);
+
+  const activeStory: HumanNetworkStory = localizedNetworkStories.find(s => s.id === selectedStoryId) || localizedNetworkStories[0];
   const currentStep: StreetStoryStep = activeStory.steps[currentStepIndex] || activeStory.steps[0];
 
   // Filtered stories logic
-  const filteredStories = HUMAN_NETWORK_STORIES.filter(story => {
+  const filteredStories = localizedNetworkStories.filter(story => {
     // Category match
     if (selectedCategory !== 'all') {
       if (story.category) {
@@ -687,7 +755,7 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
 
                 {/* Speech Bubble Above Card */}
                 {speech && (
-                  <div className="w-full mb-3 px-3 py-2 rounded-xl text-xs bg-amber-500/15 border border-amber-500/40 text-amber-300 relative shadow-sm text-right dir-rtl">
+                  <div className={`w-full mb-3 px-3 py-2 rounded-xl text-xs bg-amber-500/15 border border-amber-500/40 text-amber-300 relative shadow-sm ${lang === 'ar' ? 'text-right dir-rtl' : 'text-left dir-ltr'}`}>
                     <p className="line-clamp-3 leading-snug font-medium text-[11px]">{speech}</p>
                     <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-900 border-r border-b border-amber-500/40 rotate-45" />
                   </div>
@@ -763,7 +831,7 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
                 {/* Character Name & Role */}
                 <div className="mt-2 w-full text-center">
                   <h4 className="heading-4 text-xs font-bold line-clamp-1">{lang === 'ar' ? char.nameAr : char.nameEn}</h4>
-                  <p className="caption-text text-[11px] text-[var(--text-muted)] line-clamp-1 mt-0.5">{char.roleAr}</p>
+                  <p className="caption-text text-[11px] text-[var(--text-muted)] line-clamp-1 mt-0.5">{lang === 'ar' ? char.roleAr : (char.roleEn || char.roleAr)}</p>
                 </div>
 
                 {/* Carrying Item with Tooltip */}
@@ -773,12 +841,12 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
                     category="Data / Context"
                     description={lang === 'ar'
                       ? `ما يحمله هذا العنصر حالياً أثناء مرحلة التوجيه أو المعالجة: "${char.carryingItem}".`
-                      : `Entity holding item: ${char.carryingItem}`}
+                      : `Entity holding item: "${char.carryingItemEn || char.carryingItem}"`}
                     side="top"
                     className="mt-3 pt-2 border-t border-[var(--border-subtle)] w-full"
                   >
                     <span className="badge text-[10px] block truncate max-w-[220px] mx-auto py-0.5 cursor-help">
-                      📦 {char.carryingItem}
+                      📦 {lang === 'ar' ? char.carryingItem : (char.carryingItemEn || char.carryingItem)}
                     </span>
                   </ComponentQuickTooltip>
                 )}
@@ -847,11 +915,17 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
 
       {/* Breakdown Panels */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <ContentPanel label={lang === 'ar' ? 'القصة الواقعية' : 'Real Story'} title={currentStep.titleAr}>
-          {currentStep.storyNarrativeAr}
+        <ContentPanel 
+          label={lang === 'ar' ? 'القصة الواقعية' : 'Real Story'} 
+          title={lang === 'ar' ? currentStep.titleAr : (currentStep.titleEn || currentStep.titleAr)}
+        >
+          {lang === 'ar' ? currentStep.storyNarrativeAr : (currentStep.storyNarrativeEn || currentStep.storyNarrativeAr)}
         </ContentPanel>
-        <ContentPanel label={lang === 'ar' ? 'المطابقة التقنية' : 'Technical Match'} title={currentStep.ciscoProtocolTerm}>
-          {currentStep.technicalAnalogyAr}
+        <ContentPanel 
+          label={lang === 'ar' ? 'المطابقة التقنية' : 'Technical Match'} 
+          title={currentStep.ciscoProtocolTerm}
+        >
+          {lang === 'ar' ? currentStep.technicalAnalogyAr : (currentStep.technicalAnalogyEn || currentStep.technicalAnalogyAr)}
         </ContentPanel>
         <div className="p-4 surface space-y-2">
           <div className="flex items-center justify-between">
@@ -919,7 +993,7 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
                 <span className="badge badge-accent mono-text">{selectedCharacter.ipAddress}</span>
                 <span className="badge mono-text">{selectedCharacter.macAddress}</span>
               </div>
-              <p className="caption-text mt-0.5">{selectedCharacter.initialSpeech}</p>
+              <p className="caption-text mt-0.5">{lang === 'ar' ? selectedCharacter.initialSpeech : (selectedCharacter.initialSpeechEn || selectedCharacter.initialSpeech)}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

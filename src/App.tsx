@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Zap } from 'lucide-react';
+import { Zap, Terminal, Activity, X } from 'lucide-react';
 import { SLIDES_DATA } from './data/slidesData';
 import { SlideViewer } from './components/SlideViewer';
 import { InteractiveLab } from './components/InteractiveLab';
@@ -43,6 +43,8 @@ export default function App() {
 
   const isRtl = lang === 'ar';
 
+  const [splitPane, setSplitPane] = useState<'none' | 'cli' | 'wireshark'>('none');
+
   const handleJumpToLab = (scenarioId: string) => {
     setActiveLabScenarioId(scenarioId);
     setCurrentMode('lab');
@@ -85,8 +87,13 @@ export default function App() {
   };
 
   const handleModeChange = (mode: AppMode) => {
-    setCurrentMode(mode);
-    playNetworkTone('switch');
+    if (mode === 'cli' || mode === 'wireshark') {
+      setSplitPane(splitPane === mode ? 'none' : mode);
+      playNetworkTone('switch');
+    } else {
+      setCurrentMode(mode);
+      playNetworkTone('switch');
+    }
   };
 
   useEffect(() => {
@@ -176,6 +183,7 @@ export default function App() {
       <AppSidebar
         lang={lang}
         currentMode={currentMode}
+        splitPane={splitPane}
         onModeChange={handleModeChange}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -269,12 +277,35 @@ export default function App() {
             )}
 
             {currentMode === 'protocols' && <ProtocolStateMachine lang={lang} />}
-            {currentMode === 'wireshark' && <WiresharkInspector lang={lang} />}
-            {currentMode === 'cli' && <CiscoCliTerminal lang={lang} />}
             {currentMode === 'quiz' && <QuizSection lang={lang} />}
             {currentMode === 'ai' && <AiNetworkTutor lang={lang} />}
           </div>
         </main>
+
+        {/* IDE Split Bottom Pane */}
+        {splitPane !== 'none' && (
+          <div className="h-[450px] border-t border-white/[0.08] bg-[#0c1018] flex flex-col relative z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.06] bg-slate-900/50">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-300 uppercase tracking-wider">
+                {splitPane === 'cli' ? (
+                  <><Terminal className="w-4 h-4 text-amber-400" /> {lang === 'ar' ? 'طرفية Cisco CLI' : 'Cisco CLI Terminal'}</>
+                ) : (
+                  <><Activity className="w-4 h-4 text-emerald-400" /> {lang === 'ar' ? 'محلل Wireshark' : 'Wireshark Inspector'}</>
+                )}
+              </div>
+              <button 
+                onClick={() => setSplitPane('none')}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-4 custom-scrollbar">
+              {splitPane === 'cli' && <CiscoCliTerminal lang={lang} />}
+              {splitPane === 'wireshark' && <WiresharkInspector lang={lang} />}
+            </div>
+          </div>
+        )}
 
         <footer className="border-t border-white/[0.06] py-4 px-6">
           <div className="max-w-[1400px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-600">

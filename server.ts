@@ -58,6 +58,82 @@ async function startServer() {
     }
   });
 
+  // AI Story Translation API Endpoint
+  app.post("/api/translate-story", async (req, res) => {
+    try {
+      const { story } = req.body;
+      if (!story) {
+        return res.status(400).json({ error: "Story is required" });
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        // Return without translating if API key is not configured (frontend will use fallback)
+        return res.json({ story, status: "fallback" });
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      const systemInstruction = `You are an expert Cisco CCNA/CCNP network engineer and professional technical translator.
+Your task is to translate a complete "Human Network Story" object from Arabic to English.
+
+Translate ONLY the Arabic fields of the JSON object into high-quality technical English. Keep all IDs, IP addresses, MAC addresses, coordinate percentages (xPosition, yPosition), and coverIcon names EXACTLY as they are.
+
+Translate or add English keys:
+- titleAr -> titleEn
+- subtitleAr -> subtitleEn
+- difficulty -> difficultyEn (translate to "Beginner", "Intermediate", "Advanced", or "Expert")
+- storySummaryAr -> storySummaryEn
+- realWorldScenarioDescriptionAr -> realWorldScenarioDescriptionEn
+- ciscoCoreLessonAr -> ciscoCoreLessonEn
+
+For each character in characters array:
+- nameAr -> nameEn
+- roleAr -> roleEn
+- initialSpeech -> initialSpeechEn
+- carryingItem -> carryingItemEn (if present)
+
+For each step in steps array:
+- titleAr -> titleEn
+- storyNarrativeAr -> storyNarrativeEn
+- technicalAnalogyAr -> technicalAnalogyEn
+- payloadContentAr -> payloadContentEn
+- highlightedEventAr -> highlightedEventEn
+- speechBubbles -> speechBubblesEn (this is an object where the keys are character IDs and values are their speeches - translate those speeches to English!)
+
+Return the resulting object inside a JSON response under the key "story". Keep all formatting valid JSON.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          { role: "user", parts: [{ text: `${systemInstruction}\n\nHere is the JSON object to translate:\n${JSON.stringify(story, null, 2)}` }] }
+        ],
+        config: {
+          responseMimeType: "application/json"
+        }
+      });
+
+      let translatedStory = null;
+      try {
+        translatedStory = JSON.parse(response.text);
+      } catch (e) {
+        console.error("Failed to parse Gemini output as JSON, attempting cleanup", e);
+        // Fallback or retry logic if needed, but let's send error or original
+      }
+
+      if (translatedStory) {
+        res.json({ story: translatedStory, status: "success" });
+      } else {
+        res.json({ story, status: "fallback_parse_error" });
+      }
+    } catch (err: any) {
+      console.error("AI translation error:", err);
+      res.status(500).json({
+        error: "Failed to translate story",
+        message: err.message
+      });
+    }
+  });
+
   // Health check
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });

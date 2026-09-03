@@ -97,15 +97,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       email: email.trim(),
       avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(email)}`,
       track: targetTrack,
-      completedTopics: ['ccna_u1_ipv4_subnetting'],
-      savedNotes: {
+      joinedDate: new Date().toISOString(),
+      completedTopicIds: ['ccna_u1_ipv4_subnetting'],
+      bookmarkedTopicIds: [],
+      readPagesRecord: {},
+      studyStreakDays: 1,
+      personalNotes: {
         'ccna_u1_ipv4_subnetting': isEn ? 'Magic number rule for CCNA: 256 - Subnet Octet' : 'قاعدة حساب الـ Magic Number مهمة جداً لاختبار CCNA: 256 - Subnet Octet'
-      },
-      examScores: {},
-      bookHighlights: {},
-      createdAt: new Date().toISOString(),
-      streakDays: 1,
-      lastLoginDate: new Date().toISOString().split('T')[0]
+      }
     };
 
     onLoginSuccess(finalProfile);
