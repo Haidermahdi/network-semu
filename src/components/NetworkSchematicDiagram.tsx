@@ -22,6 +22,7 @@ import {
   HardDrive
 } from 'lucide-react';
 import { DiagramData, DiagramNode, DiagramHeaderField, DiagramSequenceStep, Language } from '../types';
+import { pickText } from '../utils/localePick';
 
 interface NetworkSchematicDiagramProps {
   diagram: DiagramData;
@@ -100,11 +101,11 @@ export const NetworkSchematicDiagram: React.FC<NetworkSchematicDiagramProps> = (
                  (lang === 'ar' ? 'رسم تخطيطي' : 'Schematic')}
               </span>
               <span className="caption-text">•</span>
-              <h4 className="heading-4 font-black text-white">{lang === 'ar' ? diagram.titleAr : (diagram.titleEn || diagram.titleAr)}</h4>
+              <h4 className="heading-4 font-black text-white">{pickText(lang, diagram.titleAr, diagram.titleEn)}</h4>
             </div>
             {diagram.captionAr && (
               <p className="caption-text text-[11px] text-slate-400 mt-0.5">
-                {lang === 'ar' ? diagram.captionAr : (diagram.captionEn || diagram.captionAr)}
+                {pickText(lang, diagram.captionAr, diagram.captionEn, 'Interactive engineering schematic')}
               </p>
             )}
           </div>
@@ -385,7 +386,7 @@ export const NetworkSchematicDiagram: React.FC<NetworkSchematicDiagramProps> = (
                     )}
                   </div>
                   <p className="text-xs text-slate-200 leading-relaxed">
-                    {lang === 'ar' ? selectedHeaderField.descAr : (selectedHeaderField.descEn || selectedHeaderField.descAr)}
+                    {pickText(lang, selectedHeaderField.descAr, selectedHeaderField.descEn)}
                   </p>
                 </div>
               )}
@@ -407,7 +408,7 @@ export const NetworkSchematicDiagram: React.FC<NetworkSchematicDiagramProps> = (
                     <tr key={i} className="hover:bg-white/[0.02]">
                       <td className="p-2.5 font-bold font-mono text-white">{f.name}</td>
                       <td className="p-2.5 font-mono text-amber-400">{f.bits}</td>
-                      <td className="p-2.5 text-slate-300">{lang === 'ar' ? f.descAr : (f.descEn || f.descAr)}</td>
+                      <td className="p-2.5 text-slate-300">{pickText(lang, f.descAr, f.descEn)}</td>
                       <td className="p-2.5 font-mono text-emerald-400">{f.exampleValue || '-'}</td>
                     </tr>
                   ))}
@@ -479,14 +480,14 @@ export const NetworkSchematicDiagram: React.FC<NetworkSchematicDiagramProps> = (
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-xs text-white">
-                          {lang === 'ar' ? step.labelAr : (step.labelEn || step.labelAr)}
+                          {pickText(lang, step.labelAr, step.labelEn, step.protocolPacket)}
                         </span>
                         <span className="font-mono text-[11px] text-amber-400/90 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded">
                           {step.protocolPacket}
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-400 mt-0.5">
-                        {step.detailsAr}
+                        {pickText(lang, step.detailsAr, step.detailsEn, `${step.fromNode} → ${step.toNode}`)}
                       </p>
                     </div>
                   </div>

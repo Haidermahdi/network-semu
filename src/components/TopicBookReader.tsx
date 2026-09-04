@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  BookOpen,
   Bookmark,
   CheckCircle2,
-  Sparkles,
   Clock,
   Award,
   Lightbulb,
@@ -14,12 +12,13 @@ import {
   HelpCircle,
   Maximize2,
 } from 'lucide-react';
-import { CurriculumTopic, Language, BookChapterPage, CiscoCliCommand } from '../types';
+import { CurriculumTopic, Language, BookChapterPage } from '../types';
 import { MarkdownContent } from './MarkdownContent';
-import { ProgressBar, InfoCallout, HighlightGrid } from './ui/ContentDisplay';
+import { InfoCallout, HighlightGrid } from './ui/ContentDisplay';
 import { generateRichBookChapters } from '../data/bookChaptersGenerator';
 import { NetworkSchematicDiagram } from './NetworkSchematicDiagram';
 import { FocusReadingModal } from './FocusReadingModal';
+import { pickText, pickTextList, formatReadTime } from '../utils/localePick';
 
 interface TopicBookReaderProps {
   topic: CurriculumTopic;
@@ -77,134 +76,87 @@ export const TopicBookReader: React.FC<TopicBookReaderProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Reading Progress & Tool Actions */}
-      <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-bold text-white">{topic.titleAr}</span>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Focus Reading Mode Button */}
-            <button
-              onClick={() => setIsFocusModeOpen(true)}
-              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-600/15 hover:from-amber-500/30 hover:to-amber-600/25 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm hover:shadow-amber-500/10"
-              title={lang === 'ar' ? 'وضع القراءة أو التركيز على المحتوى (ملء الشاشة مع التنقل بين الشرائح)' : 'Focus Reading Mode'}
-            >
-              <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
-              <span>{lang === 'ar' ? 'وضع القراءة والتركيز' : 'Focus Reading Mode'}</span>
-            </button>
-
-            {/* Font Size Adjuster */}
-            <div className="flex items-center gap-1 p-0.5 rounded-lg bg-white/[0.04] border border-white/[0.06]">
-              {(['normal', 'large', 'xlarge'] as const).map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setFontSize(size)}
-                  className={`px-2 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${
-                    fontSize === size ? 'bg-amber-500/20 text-amber-300' : 'text-slate-500 hover:text-slate-300'
-                  }`}
-                >
-                  {size === 'normal' ? 'A' : size === 'large' ? 'A+' : 'A++'}
-                </button>
-              ))}
-            </div>
-
-            {/* Bookmark */}
-            {onBookmarkToggle && (
-              <button
-                onClick={() => onBookmarkToggle(topic.id)}
-                className={`p-2 rounded-lg border transition-all cursor-pointer ${
-                  isBookmarked ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-white/[0.03] text-slate-500 border-white/[0.06]'
-                }`}
-                title={lang === 'ar' ? 'حفظ في المفضلة' : 'Bookmark'}
-              >
-                <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-amber-400' : ''}`} />
-              </button>
-            )}
-
-            {/* Mark Topic Completed */}
-            {onMarkTopicCompleted && (
-              <button
-                onClick={() => onMarkTopicCompleted(topic.id)}
-                className={`p-2 rounded-lg border transition-all cursor-pointer ${
-                  isCompleted ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-white/[0.03] text-slate-500 border-white/[0.06]'
-                }`}
-                title={lang === 'ar' ? 'تحديد الموضوع كمكتمل' : 'Mark Topic as Completed'}
-              >
-                <CheckCircle2 className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+    <div className="space-y-3">
+      {/* Single compact reading toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-0.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-[11px] font-mono text-amber-400/90 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 shrink-0">
+            {currentPageIndex + 1}/{totalPages}
+          </span>
+          <span className="text-[11px] text-slate-500 truncate">
+            {lang === 'ar' ? `${readCount} مقروء` : `${readCount} read`}
+          </span>
         </div>
-        <ProgressBar
-          value={readCount}
-          max={totalPages}
-          label={lang === 'ar' ? `تقدم القراءة — ${readCount}/${totalPages} صفحات` : `Reading Progress — ${readCount}/${totalPages} pages`}
-        />
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            onClick={() => setIsFocusModeOpen(true)}
+            className="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+            title={lang === 'ar' ? 'وضع القراءة المركّز' : 'Focus Reading Mode'}
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+            <span>{lang === 'ar' ? 'قراءة مركّزة' : 'Focus Read'}</span>
+          </button>
+          <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+            {(['normal', 'large', 'xlarge'] as const).map((size) => (
+              <button
+                key={size}
+                onClick={() => setFontSize(size)}
+                className={`px-2 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${
+                  fontSize === size ? 'bg-amber-500/20 text-amber-300' : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                {size === 'normal' ? 'A' : size === 'large' ? 'A+' : 'A++'}
+              </button>
+            ))}
+          </div>
+          {onBookmarkToggle && (
+            <button
+              onClick={() => onBookmarkToggle(topic.id)}
+              className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                isBookmarked ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-white/[0.03] text-slate-500 border-white/[0.06]'
+              }`}
+              title={lang === 'ar' ? 'حفظ في المفضلة' : 'Bookmark'}
+            >
+              <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-amber-400' : ''}`} />
+            </button>
+          )}
+          {onMarkTopicCompleted && (
+            <button
+              onClick={() => onMarkTopicCompleted(topic.id)}
+              className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                isCompleted ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-white/[0.03] text-slate-500 border-white/[0.06]'
+              }`}
+              title={lang === 'ar' ? 'تحديد الموضوع كمكتمل' : 'Mark Topic as Completed'}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Modern Horizontal Chapter Navigator (No vertical empty space) */}
-      <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2.5">
-        <div className="flex items-center justify-between gap-2 px-1">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-bold text-slate-300">
-              {lang === 'ar' ? 'فصول الكتاب المعتمد (8 فصول متسلسلة)' : 'Official Curriculum Chapters (8 Sections)'}
-            </span>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <span className="text-[11px] font-mono text-amber-400/80 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-              {currentPageIndex + 1} / {totalPages}
-            </span>
+      {/* Slim chapter pills */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+        {bookPages.map((page, idx) => {
+          const isActive = idx === currentPageIndex;
+          const isRead = readPages.includes(page.pageNumber);
+          const label = pickText(lang, page.badgeAr, page.badgeEn, page.chapterTitleEn);
+          return (
             <button
-              onClick={() => setIsFocusModeOpen(true)}
-              className="text-[11px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer transition-colors"
+              key={page.pageNumber}
+              onClick={() => setCurrentPageIndex(idx)}
+              title={label}
+              className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer border ${
+                isActive
+                  ? 'bg-amber-500 text-black border-amber-400'
+                  : isRead
+                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25'
+                  : 'bg-white/[0.03] text-slate-400 border-white/[0.06] hover:text-slate-200'
+              }`}
             >
-              <Maximize2 className="w-3 h-3" />
-              <span>{lang === 'ar' ? 'ملء الشاشة' : 'Fullscreen'}</span>
+              {page.pageNumber}. {label.split('&')[0].trim().slice(0, 18)}
             </button>
-          </div>
-        </div>
-
-        {/* Responsive Grid of 8 Chapters */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-2">
-          {bookPages.map((page, idx) => {
-            const isActive = idx === currentPageIndex;
-            const isRead = readPages.includes(page.pageNumber);
-            return (
-              <button
-                key={page.pageNumber}
-                onClick={() => setCurrentPageIndex(idx)}
-                className={`p-2.5 rounded-xl border text-right transition-all flex flex-col justify-between gap-1.5 cursor-pointer ${
-                  isActive
-                    ? 'bg-amber-500/15 border-amber-500/40 ring-1 ring-amber-500/30 shadow-md shadow-amber-500/10'
-                    : isRead
-                    ? 'bg-emerald-500/5 hover:bg-emerald-500/10 border-emerald-500/20'
-                    : 'bg-white/[0.02] hover:bg-white/[0.05] border-white/[0.06]'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-1 w-full">
-                  <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black shrink-0 ${
-                    isActive ? 'bg-amber-500 text-black' : isRead ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/[0.06] text-slate-400'
-                  }`}>
-                    {isRead && !isActive ? '✓' : page.pageNumber}
-                  </span>
-                  <span className="text-[10px] text-slate-500 flex items-center gap-1 font-mono">
-                    <Clock className="w-2.5 h-2.5" />
-                    {page.estimatedReadTime}
-                  </span>
-                </div>
-                <div className={`text-xs font-bold leading-snug line-clamp-2 ${
-                  isActive ? 'text-amber-300' : isRead ? 'text-emerald-400' : 'text-slate-300'
-                }`}>
-                  {page.badgeAr}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+          );
+        })}
       </div>
 
       {/* Page Content (Full Width - Prominent and Spacious) */}
@@ -215,16 +167,16 @@ export const TopicBookReader: React.FC<TopicBookReaderProps> = ({
             <div>
               <div className="flex items-center gap-2 text-[11px] text-amber-400 font-bold">
                 <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
-                  {currentPage.badgeAr}
+                  {pickText(lang, currentPage.badgeAr, currentPage.badgeEn, currentPage.chapterTitleEn)}
                 </span>
                 <span className="text-slate-600">•</span>
                 <span className="flex items-center gap-1 text-slate-500">
                   <Clock className="w-3 h-3" />
-                  {currentPage.estimatedReadTime}
+                  {formatReadTime(lang, currentPage.estimatedReadTime)}
                 </span>
               </div>
               <h3 className="text-lg sm:text-xl font-black text-white mt-2 leading-snug">
-                {currentPage.chapterTitleAr}
+                {pickText(lang, currentPage.chapterTitleAr, currentPage.chapterTitleEn)}
               </h3>
             </div>
             <div className="flex items-center gap-2">
@@ -249,7 +201,15 @@ export const TopicBookReader: React.FC<TopicBookReaderProps> = ({
 
             {/* Markdown Body */}
             <div className={`book-text-body ${getTextSizeClass()} leading-relaxed`}>
-              <MarkdownContent content={currentPage.contentMarkdownAr} lang={lang} />
+              <MarkdownContent
+                content={pickText(
+                  lang,
+                  currentPage.contentMarkdownAr,
+                  currentPage.contentMarkdownEn,
+                  topic.contentMarkdownEn || topic.contentMarkdownAr
+                )}
+                lang={lang}
+              />
             </div>
 
             {/* Visual Engineering Diagram / Schematic */}
@@ -284,11 +244,19 @@ export const TopicBookReader: React.FC<TopicBookReaderProps> = ({
                 </div>
 
                 <p className="text-xs sm:text-sm text-white font-bold leading-relaxed">
-                  {currentPage.interactiveCheck.questionAr}
+                  {pickText(
+                    lang,
+                    currentPage.interactiveCheck.questionAr,
+                    currentPage.interactiveCheck.questionEn
+                  )}
                 </p>
 
                 <div className="space-y-2 pt-1">
-                  {currentPage.interactiveCheck.optionsAr.map((option, optIdx) => {
+                  {pickTextList(
+                    lang,
+                    currentPage.interactiveCheck.optionsAr,
+                    currentPage.interactiveCheck.optionsEn
+                  ).map((option, optIdx) => {
                     const isSelected = selectedAnswer === optIdx;
                     const isCorrect = optIdx === currentPage.interactiveCheck?.correctIndex;
                     let btnClass = 'bg-white/[0.03] border-white/[0.08] text-slate-300 hover:bg-white/[0.06] hover:border-white/[0.15]';
@@ -338,7 +306,11 @@ export const TopicBookReader: React.FC<TopicBookReaderProps> = ({
                       <strong className="text-amber-300">
                         {lang === 'ar' ? '💡 التفسير الهندسي: ' : '💡 Technical Explanation: '}
                       </strong>
-                      {currentPage.interactiveCheck.explanationAr}
+                      {pickText(
+                        lang,
+                        currentPage.interactiveCheck.explanationAr,
+                        currentPage.interactiveCheck.explanationEn
+                      )}
                     </div>
                   )}
                 </div>
@@ -346,24 +318,24 @@ export const TopicBookReader: React.FC<TopicBookReaderProps> = ({
             )}
 
             {/* Cisco Tip */}
-            {currentPage.ciscoTipAr && (
+            {(lang === 'ar' ? currentPage.ciscoTipAr : (currentPage.ciscoTipEn || currentPage.ciscoTipAr)) && (
               <InfoCallout
                 title={lang === 'ar' ? 'نصيحة ذهبية لمهندسي سيسكو' : 'Cisco Engineering Tip'}
                 icon={<Lightbulb className="w-4 h-4" />}
               >
-                {currentPage.ciscoTipAr}
+                {pickText(lang, currentPage.ciscoTipAr, currentPage.ciscoTipEn)}
               </InfoCallout>
             )}
 
             {/* Key Takeaways */}
-            {currentPage.keyTakeawaysAr && currentPage.keyTakeawaysAr.length > 0 && (
+            {pickTextList(lang, currentPage.keyTakeawaysAr, currentPage.keyTakeawaysEn).length > 0 && (
               <div className="space-y-2">
                 <h4 className="text-xs font-bold text-cyan-300 flex items-center gap-2">
                   <Award className="w-4 h-4 text-cyan-400" />
                   {lang === 'ar' ? 'أهم مخرجات التعلم' : 'Key Learning Outcomes'}
                 </h4>
                 <HighlightGrid
-                  items={currentPage.keyTakeawaysAr.map(t => ({ text: t }))}
+                  items={pickTextList(lang, currentPage.keyTakeawaysAr, currentPage.keyTakeawaysEn).map(t => ({ text: t }))}
                   columns={1}
                 />
               </div>
@@ -403,30 +375,6 @@ export const TopicBookReader: React.FC<TopicBookReaderProps> = ({
             </button>
           </div>
         </div>
-
-      {/* Executive Summary */}
-      <div className="p-5 rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.06] space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-cyan-500/15 border border-cyan-500/25">
-            <Sparkles className="w-4 h-4 text-cyan-400" />
-          </div>
-          <div>
-            <h3 className="text-sm font-black text-white">
-              {lang === 'ar' ? 'ملخص الموضوع التنفيذي' : 'Topic Executive Summary'}
-            </h3>
-            <p className="text-[11px] text-slate-500">{topic.titleAr}</p>
-          </div>
-        </div>
-        <p className="text-xs text-slate-300 leading-relaxed">
-          {topic.summaryAr || `يمثل موضوع ${topic.titleAr} (${topic.ciscoBlueprintRef}) حجر الأساس لشهادة سيسكو الرسمية.`}
-        </p>
-        {topic.technicalHighlights && topic.technicalHighlights.length > 0 && (
-          <HighlightGrid
-            items={topic.technicalHighlights.map(h => ({ text: h }))}
-            columns={2}
-          />
-        )}
-      </div>
 
       {/* Fullscreen Reading / Content Focus Mode Modal */}
       <FocusReadingModal

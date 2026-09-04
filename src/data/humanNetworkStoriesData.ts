@@ -1,5 +1,6 @@
 import { HumanNetworkStory } from '../types';
 import { EXPANDED_CURRICULUM_STORIES } from './curriculumStoriesExpanded';
+import { GENERATED_TRACK_STORIES, EXISTING_STORY_TRACKS } from './trackStoryCatalog';
 
 const BASE_HUMAN_NETWORK_STORIES: HumanNetworkStory[] = [
   {
@@ -1622,6 +1623,10 @@ const BASE_HUMAN_NETWORK_STORIES: HumanNetworkStory[] = [
 
 export const HUMAN_NETWORK_STORIES: HumanNetworkStory[] = [
   ...BASE_HUMAN_NETWORK_STORIES,
-  ...EXPANDED_CURRICULUM_STORIES
-];
+  ...EXPANDED_CURRICULUM_STORIES,
+  ...GENERATED_TRACK_STORIES,
+].map((story) => ({
+  ...story,
+  track: story.track || EXISTING_STORY_TRACKS[story.id] || 'ccna',
+}));
 

@@ -7,9 +7,9 @@ import { PROTOCOL_DEEP_DIVES } from './protocolDeepDives';
  * mathematical equations, hardware ASIC behavior, and interactive diagrams/schematics.
  */
 export function generateRichBookChapters(topic: CurriculumTopic): BookChapterPage[] {
-  // If the topic already has bespoke handwritten bookPages, return them
+  // If the topic already has bespoke handwritten bookPages, enrich then return
   if (topic.bookPages && topic.bookPages.length >= 5) {
-    return topic.bookPages;
+    return enrichBookPagesWithEnglish(topic.bookPages, topic, undefined);
   }
 
   const titleLower = (topic.titleAr + ' ' + topic.titleEn + ' ' + topic.id).toLowerCase();
@@ -527,7 +527,523 @@ ${topic.technicalHighlights.map(h => `- 📌 **${h}**`).join('\n')}
     }
   });
 
-  return pages;
+  return enrichBookPagesWithEnglish(pages, topic, protoDetail);
+}
+
+/**
+ * Fills missing English book-page fields so EN mode never falls back to Arabic body text.
+ */
+function enrichBookPagesWithEnglish(
+  pages: BookChapterPage[],
+  topic: CurriculumTopic,
+  protoDetail?: any
+): BookChapterPage[] {
+  const topicTitle = topic.titleEn || topic.titleAr;
+  const topicBodyEn = topic.contentMarkdownEn || topic.contentMarkdownAr;
+
+  const headerTableEn = protoDetail
+    ? `
+| Header Field | Size (bits) | Engineering Function |
+| :--- | :--- | :--- |
+${protoDetail.headerStructure.map((h: any) => `| **${h.field}** | \`${h.bits}\` | ${h.descEn || h.descAr} |`).join('\n')}
+`
+    : `
+| Field | Size | Function |
+| :--- | :--- | :--- |
+| **Preamble & SFD** | 8 Bytes | Clock sync and frame start delimiter |
+| **Destination Address** | 6 Bytes (48 Bits) | Destination MAC address |
+| **Source Address** | 6 Bytes (48 Bits) | Source MAC address |
+| **EtherType / Length** | 2 Bytes (16 Bits) | Payload protocol (IPv4: 0x0800, ARP: 0x0806) |
+| **Payload Data** | 46 - 1500 Bytes | Upper-layer data (L3 packet) |
+| **FCS (CRC-32)** | 4 Bytes (32 Bits) | Frame integrity check |
+`;
+
+  const stateMachineEn = protoDetail?.stateMachine
+    ? protoDetail.stateMachine
+        .map(
+          (s: any) =>
+            `1. **State ${s.state}:** ${s.descEn || s.descAr}\n   - *Trigger:* \`${s.triggerEn || s.triggerAr}\``
+        )
+        .join('\n\n')
+    : `1. **Discovery Phase:** Periodic Hello / Solicitation messages discover neighbors.
+2. **Negotiation & Handshake:** Align timers, MTU, authentication, and capabilities.
+3. **Database Exchange:** Reliable exchange of topology / address records.
+4. **Steady State & Keepalive:** Lightweight keepalives detect link loss quickly.`;
+
+  const packetTypesEn = protoDetail?.packetTypes
+    ? protoDetail.packetTypes
+        .map(
+          (p: any) =>
+            `- ✉️ **${p.name}** ${p.opcode ? `(\`${p.opcode}\`)` : ''}: ${p.purposeEn || p.purposeAr}`
+        )
+        .join('\n')
+    : `- ✉️ **Hello / Discovery:** Establish and maintain neighbor relationships.
+- ✉️ **Update / Advertisement:** Carry incremental topology changes.
+- ✉️ **Acknowledgment:** Confirm reliable delivery of critical messages.`;
+
+  const cliEn =
+    topic.ciscoCliOutputs && topic.ciscoCliOutputs.length > 0
+      ? topic.ciscoCliOutputs
+          .map(
+            (cmd) => `
+#### 🖥️ Verification: \`${cmd.command}\`
+\`\`\`cisco
+${cmd.deviceName}(${cmd.mode})# ${cmd.command}
+${cmd.output}
+\`\`\`
+> **🔍 Engineering analysis:**  
+> ${cmd.explanationEn || cmd.explanationAr}
+`
+          )
+          .join('\n\n')
+      : `
+#### 🖥️ Verification: \`show ip route\`
+\`\`\`cisco
+Core-R1# show ip route
+Gateway of last resort is 10.1.10.2 to network 0.0.0.0
+
+      10.0.0.0/8 is variably subnetted, 4 subnets, 2 masks
+C        10.1.10.0/30 is directly connected, GigabitEthernet0/0/1
+L        10.1.10.1/32 is directly connected, GigabitEthernet0/0/1
+O        192.168.10.0/24 [110/2] via 10.1.10.2, 00:14:22, GigabitEthernet0/0/1
+\`\`\`
+> **🔍 Engineering analysis:**  
+> The \`O\` code indicates an OSPF-learned route with administrative distance [110] and metric [2].
+`;
+
+  const highlightsEn =
+    topic.technicalHighlightsEn && topic.technicalHighlightsEn.length > 0
+      ? topic.technicalHighlightsEn.map((h) => `- 📌 **${h}**`).join('\n')
+      : topic.technicalHighlights && topic.technicalHighlights.length > 0
+      ? topic.technicalHighlights.map((h) => `- 📌 **${h}**`).join('\n')
+      : `- 📌 **Administrative Distance:** Connected = 0, Static = 1, EIGRP = 90, OSPF = 110, eBGP = 20, iBGP = 200.
+- 📌 **VLAN ranges:** Normal 1–1005, extended 1006–4094.
+- 📌 **Ethernet MTU:** Default 1500 bytes (excluding L2 header).`;
+
+  const enByPage: Record<
+    number,
+    {
+      contentMarkdownEn: string;
+      keyTakeawaysEn: string[];
+      ciscoTipEn: string;
+      questionEn: string;
+      optionsEn: string[];
+      explanationEn: string;
+      estimatedReadTimeEn: string;
+    }
+  > = {
+    1: {
+      estimatedReadTimeEn: '7 min',
+      contentMarkdownEn: `### 🏛️ Architectural Foundations: ${topicTitle}
+**Cisco blueprint reference:** \`${topic.ciscoBlueprintRef}\`  
+**Engineering level:** \`${topic.level}\` | **Track:** \`${topic.track.toUpperCase()}\`
+
+---
+
+### 1.1 Engineering Context & Stack Placement
+This technology is a core building block in modern enterprise campus and data-center designs. Stable, highly available infrastructure depends on understanding its governing rules:
+- **Architectural layer:** Controls traffic behavior across OSI / TCP-IP model layers.
+- **Operational goal:** Maximize throughput, minimize latency/jitter, and prevent loops and cascading failures.
+- **Standards compliance:** Documented by IETF / IEEE to guarantee multi-vendor interoperability.
+
+---
+
+### 1.2 Core Theory
+${topicBodyEn}
+
+---
+
+### 1.3 Strict Design Principles
+1. **Plane separation:** Keep **Control Plane** decision-making distinct from **Data Plane** line-rate forwarding.
+2. **High Availability:** Dual-home uplinks to eliminate single points of failure (SPOF).
+3. **Scalability:** Grow the fabric without a full redesign.`,
+      keyTakeawaysEn: [
+        `Place ${topic.level} concepts correctly within the Cisco blueprint and real campus designs.`,
+        'Distinguish Control Plane decisioning from Data Plane forwarding.',
+        'Recognize why IETF/IEEE standards enable multi-vendor interoperability.',
+      ],
+      ciscoTipEn:
+        'On Cisco exams, prioritize the architectural reason for choosing a technology—not only the CLI syntax.',
+      questionEn: `What is the primary architectural goal of deploying ${topicTitle} in enterprise networks?`,
+      optionsEn: [
+        'Operational stability, loop prevention, and alternate paths at line-rate forwarding.',
+        'Automatically shut down ports when user count increases.',
+        'Convert the entire Ethernet network into serial links.',
+        'Eliminate the need for IP addressing entirely.',
+      ],
+      explanationEn:
+        'The core architectural goal is network stability, high availability, and error-free line-rate packet forwarding.',
+    },
+    2: {
+      estimatedReadTimeEn: '8 min',
+      contentMarkdownEn: `### 🔬 Bit-Level & Hardware Pipeline Dissection
+This chapter dives into bits/bytes inside NICs and switch ASICs (Switch Fabric).
+
+---
+
+### 2.1 How Cisco ASICs Process Headers
+Cisco Catalyst (UADP ASIC) and ASR/ISR (QuantumFlow) platforms use parallel pipelines:
+1. **Ingress Parsing:** Read leading bytes and validate CRC-32 / FCS.
+2. **TCAM Lookup:** Parallel ACL / QoS / address matches in a single clock cycle.
+3. **Header Rewrite:** Decrement TTL, recompute checksum, rewrite Source/Dest MAC.
+4. **Egress Queuing:** Forward at line rate without punting to the control CPU.
+
+---
+
+### 2.2 Official Header Specification
+${headerTableEn}
+
+---
+
+### 2.3 Key Equations
+- **Serialization Delay:** $\\text{Delay} = \\frac{\\text{Packet Size (bits)}}{\\text{Bandwidth (bps)}}$
+- **Wire-Speed PPS:** $\\text{PPS} = \\frac{\\text{Interface Speed}}{\\text{Frame Size} + 20\\text{ Bytes Overhead}}$`,
+      keyTakeawaysEn: [
+        'Understand how headers are matched in TCAM at wire speed.',
+        'Know field sizes and functions in the protocol header.',
+        'Distinguish fixed vs variable-length headers.',
+      ],
+      ciscoTipEn:
+        'Exam focus: Flags, reserved lengths, and padding when headers are not 32-bit aligned.',
+      questionEn:
+        'Which specialized memory do Cisco devices use to match headers and forwarding rules in a single processing cycle?',
+      optionsEn: [
+        'TCAM (Ternary Content Addressable Memory)',
+        'Mechanical HDD storage',
+        'Bootflash only',
+        'Legacy BIOS chip',
+      ],
+      explanationEn:
+        'Cisco uses TCAM for ultra-fast parallel lookups at millions of packets per second.',
+    },
+    3: {
+      estimatedReadTimeEn: '8 min',
+      contentMarkdownEn: `### 🔄 Protocol Conversation & Sequence Flow
+Network protocols operate as timed finite-state conversations—not isolated messages.
+
+---
+
+### 3.1 Step-by-Step Engineering Dialogue
+${
+        protoDetail?.stateMachine
+          ? `#### 🚥 Official Protocol State Machine:\n${stateMachineEn}`
+          : stateMachineEn
+      }
+
+---
+
+### 3.2 Protocol Packet Types
+${packetTypesEn}
+
+---
+
+### 3.3 Timers & Convergence Impact
+- **Hello Timer:** Interval for keepalive probes (often 1s / 5s / 10s).
+- **Dead / Hold Timer:** Max wait before declaring a neighbor down (typically 3–4× Hello).
+- **BFD:** Sub-50ms failure detection on Cisco platforms.`,
+      keyTakeawaysEn: [
+        'Understand adjacency formation phases and steady-state keepalives.',
+        'Know why timer / MTU mismatches break neighbor formation.',
+        'Recognize BFD for sub-second failure detection.',
+      ],
+      ciscoTipEn:
+        'If OSPF sticks in ExStart, the #1 global cause is MTU mismatch on the link.',
+      questionEn:
+        'What happens if Hello or Dead timers differ between two routers on the same link?',
+      optionsEn: [
+        'Neighbor adjacency fails and will not form.',
+        'The faster router automatically forces its timers on the peer.',
+        'The network silently falls back to RIP.',
+        'No impact; the network continues normally.',
+      ],
+      explanationEn:
+        'Cisco standards require strict Hello/Dead timer matching to form a stable adjacency.',
+    },
+    4: {
+      estimatedReadTimeEn: '7 min',
+      contentMarkdownEn: `### 🌐 Enterprise Campus & Data Center Topology
+Real networks follow Cisco Validated Designs (CVD)—not ad-hoc device wiring.
+
+---
+
+### 4.1 Classic Three-Tier Hierarchical Model
+1. **Core Layer:** High-speed transit; avoid filtering that harms performance.
+2. **Distribution Layer:** Policy, Inter-VLAN routing, ACLs, and QoS aggregation.
+3. **Access Layer:** End-user connectivity, Port Security / 802.1X, and PoE.
+
+---
+
+### 4.2 Spine-and-Leaf (Modern DC Fabric)
+- VXLAN/EVPN fabrics replace classic hierarchy with **Spine-Leaf**.
+- Every Leaf connects to every Spine for predictable one-hop East-West latency.
+
+---
+
+### 4.3 Redundancy Mechanisms
+- **EtherChannel / LACP (802.3ad):** Bundle links for bandwidth + failover.
+- **FHRP (HSRP / VRRP):** Virtual default gateway continuity.
+- **Dual-Homed Uplinks:** Two independent uplinks to distribution.`,
+      keyTakeawaysEn: [
+        'Contrast Three-Tier campus vs Spine-Leaf data-center designs.',
+        'Know why policy lives in Distribution, not Core.',
+        'Apply redundancy patterns that protect critical services.',
+      ],
+      ciscoTipEn:
+        'In Cisco Enterprise Architecture questions, place default gateways and routing policies at Distribution.',
+      questionEn:
+        'In the Cisco hierarchical model, where should routing policy and ACLs typically be applied?',
+      optionsEn: [
+        'Distribution Layer',
+        'High-speed Core Layer',
+        'Only on external fiber cables',
+        'Nowhere — policies are never applied',
+      ],
+      explanationEn:
+        'Distribution is the policy/aggregation layer; Core focuses on maximum forwarding speed.',
+    },
+    5: {
+      estimatedReadTimeEn: '9 min',
+      contentMarkdownEn: `### 💻 Cisco IOS / IOS-XE Production CLI
+This chapter covers production-grade configuration patterns and golden verification outputs.
+
+---
+
+### 5.1 Production-Grade Configuration Scenario
+\`\`\`cisco
+! =====================================================
+! Cisco IOS-XE Production Hardened Configuration
+! =====================================================
+hostname Core-R1
+service password-encryption
+no ip domain-lookup
+ip routing
+
+interface GigabitEthernet0/0/1
+ description UPLINK-TO-DIST-SW1
+ ip address 10.1.10.1 255.255.255.252
+ no shutdown
+ negotiation auto
+ carrier-delay msec 50
+
+${
+        protoDetail
+          ? protoDetail.ciscoConfigSnippet
+          : `router ospf 1
+ router-id 1.1.1.1
+ auto-cost reference-bandwidth 100000
+ network 10.1.10.0 0.0.0.3 area 0
+ passive-interface default
+ no passive-interface GigabitEthernet0/0/1`
+      }
+\`\`\`
+
+---
+
+### 5.2 Golden Verification Commands
+${cliEn}
+
+---
+
+### 5.3 Security Hardening Best Practices
+- \`passive-interface default\` on user-facing edges to stop routing protocol leakage.
+- Cryptographic authentication (SHA-256 / MD5) on protocol exchanges.
+- CoPP to protect the control-plane CPU from DoS.`,
+      keyTakeawaysEn: [
+        'Write and apply Cisco-standard hardened configurations.',
+        'Interpret advanced show-command outputs and counters.',
+        'Harden the control plane with passive-interface and CoPP.',
+      ],
+      ciscoTipEn:
+        'Performance-based lab items rarely ask for show commands explicitly—but they are your only proof the solution works.',
+      questionEn:
+        'What is the security benefit of enabling passive-interface on employee-facing ports?',
+      optionsEn: [
+        'Stops routing advertisements toward user devices, reducing attack surface and bandwidth waste.',
+        'Permanently disconnects employee Internet access.',
+        'Charges laptop batteries faster.',
+        'Puts NICs into a wireless silent mode.',
+      ],
+      explanationEn:
+        'passive-interface blocks routing protocol TX/RX on edge ports, preventing topology leaks and route injection.',
+    },
+    6: {
+      estimatedReadTimeEn: '8 min',
+      contentMarkdownEn: `### 🛠️ Cisco TAC Troubleshooting Methodology
+Troubleshooting is often >40% of Cisco exam weight and day-to-day engineering work.
+
+---
+
+### 6.1 Common Symptom → Root Cause Matrix
+| Symptom | Likely Root Cause | TAC Resolution |
+| :--- | :--- | :--- |
+| **Neighbor flapping after config** | MTU or timer mismatch | Align \`ip mtu\` / timer values |
+| **Route flapping** | Physical errors or congestion | Check CRC / drops on \`show interfaces\` |
+| **Stuck in 2-Way on multi-access** | DROther behavior | Often normal—not a fault |
+| **Black-hole at specific sizes** | MTU + DF bit | Adjust MTU / TCP MSS |
+| **Duplicate Router-ID** | Cloned config | Set unique \`router-id\` and restart process |
+
+---
+
+### 6.2 Layered Troubleshooting Approach
+1. **Layer 1:** Cabling, optics, port LEDs (\`show interfaces status\`).
+2. **Layer 2:** Speed/Duplex, VLAN, STP states (\`show spanning-tree\`).
+3. **Layer 3:** Addressing / masks / RIB (\`show ip route\`).
+4. **Control Plane:** Neighbors and protocol DB (\`show ip [protocol] neighbor\`).
+
+---
+
+### 6.3 Debug Safety Warnings
+- **Never** run \`debug all\` in production — it can pin CPU at 100%.
+- Prefer conditional debugging:
+\`\`\`cisco
+Router# debug condition interface GigabitEthernet0/0/1
+Router# debug ip packet 101 detail
+\`\`\``,
+      keyTakeawaysEn: [
+        'Use layered isolation to resolve complex faults quickly.',
+        'Separate real faults from expected protocol behavior.',
+        'Avoid catastrophic debug practices in live networks.',
+      ],
+      ciscoTipEn:
+        'If everything looks correct but packets drop in tunnels/VPN, MTU/MSS is the cause ~90% of the time.',
+      questionEn:
+        'Why do Cisco engineers strongly warn against \`debug all\` on a production router?',
+      optionsEn: [
+        'It floods millions of log lines per second and can peg CPU at 100%, crashing the box.',
+        'It immediately erases startup-config.',
+        'It switches the system language to Chinese.',
+        'It physically powers off the PSU.',
+      ],
+      explanationEn:
+        'debug all prints every event unfiltered, exhausting CPU and collapsing the device.',
+    },
+    7: {
+      estimatedReadTimeEn: '7 min',
+      contentMarkdownEn: `### ⚖️ Engineering Comparisons & Trade-offs
+Great engineers know when to choose a technology—and when to avoid it.
+
+---
+
+### 7.1 Comparison Matrix
+| Criterion | Current Tech (${topicTitle}) | Classic Alternative | Advanced / Future |
+| :--- | :--- | :--- | :--- |
+| **Standards** | Open IETF / IEEE | Proprietary legacy | SDN / Cloud-native |
+| **Convergence** | Fast (sub-second to seconds) | Slow (30–50s) | Near-instant (<50ms) |
+| **Resource use** | Moderate–high by scale | Very light | Controller-orchestrated |
+| **Ops complexity** | Requires Cisco-certified skill | Simple / primitive | Fully automated via APIs |
+| **Cloud fit** | Supported on physical & virtual Cisco | Poor cloud fit | Designed for multi-cloud fabrics |
+
+---
+
+### 7.2 Real-World Use Cases
+1. **Enterprise Campus:** Hierarchical redundancy across buildings and hundreds of switches.
+2. **Banking / Finance:** Sub-millisecond loss intolerance.
+3. **Service Providers:** Millions of Internet routes via BGP / MPLS.`,
+      keyTakeawaysEn: [
+        'Select solutions based on business constraints—not habit.',
+        'Compare open standards vs proprietary cost/lock-in.',
+        'Connect classic protocols to SDN automation trajectories.',
+      ],
+      ciscoTipEn:
+        'Cisco exam answers depend on the constraints stated in the question stem—not a single universal “best” technology.',
+      questionEn:
+        'What matters most when comparing protocols for sensitive banking networks?',
+      optionsEn: [
+        'Fast convergence and session-preserving alternate paths.',
+        'Cheapest Ethernet cable price only.',
+        'Router chassis exterior color.',
+        'Removing passwords for easier access.',
+      ],
+      explanationEn:
+        'In banking, path stability and sub-second recovery dominate every other criterion.',
+    },
+    8: {
+      estimatedReadTimeEn: '6 min',
+      contentMarkdownEn: `### 🎯 Cisco Exam Secrets & Critical Pitfalls
+Exam-focused traps for ${topic.level} and the points item writers love to test.
+
+---
+
+### 8.1 Common Sneaky Exam Traps
+1. **Exception words:** EXCEPT / NOT / LEAST / MUST can invert the correct choice.
+2. **Longest Prefix Match:** More-specific masks win before AD or metric.
+3. **Reserved addresses:** Network ID and broadcast addresses are not host IPs.
+4. **up/down vs up/up:** Physical up but line protocol down often means framing/keepalive mismatch.
+
+---
+
+### 8.2 Fixed Numbers Cheat Sheet
+${highlightsEn}
+
+---
+
+### 8.3 Time Management Tips
+- Typical exams: ~95–105 questions in 120 minutes (or 140 for ESL accommodations).
+- Cap multiple-choice items at ~90 seconds to protect performance lab time.
+- Read CLI outputs carefully before answering.`,
+      keyTakeawaysEn: [
+        'Spot exception-word traps before selecting an answer.',
+        'Memorize AD values and other fixed exam numbers.',
+        'Budget time so performance labs are finished.',
+      ],
+      ciscoTipEn:
+        'Cisco golden rule: Longest Match beats AD; AD beats Metric.',
+      questionEn:
+        'If a router has 192.168.1.0/24 via EIGRP (AD=90) and 192.168.1.128/25 via OSPF (AD=110), which path is used for 192.168.1.130?',
+      optionsEn: [
+        'The OSPF /25 path because Longest Prefix Match wins.',
+        'The EIGRP path because AD 90 is lower.',
+        'The packet is dropped due to protocol mismatch.',
+        'Packets are load-balanced 50/50 automatically.',
+      ],
+      explanationEn:
+        'Longest Prefix Match is evaluated first; /25 beats /24 before AD or metric are considered.',
+    },
+  };
+
+  return pages.map((page) => {
+    const en = enByPage[page.pageNumber];
+    if (!en) {
+      return {
+        ...page,
+        contentMarkdownEn: page.contentMarkdownEn || topicBodyEn,
+        keyTakeawaysEn: page.keyTakeawaysEn || page.keyTakeawaysAr,
+        ciscoTipEn: page.ciscoTipEn || page.ciscoTipAr,
+        interactiveCheck: page.interactiveCheck
+          ? {
+              ...page.interactiveCheck,
+              questionEn: page.interactiveCheck.questionEn || page.interactiveCheck.questionAr,
+              optionsEn: page.interactiveCheck.optionsEn || page.interactiveCheck.optionsAr,
+              explanationEn: page.interactiveCheck.explanationEn || page.interactiveCheck.explanationAr,
+            }
+          : undefined,
+      };
+    }
+
+    return {
+      ...page,
+      estimatedReadTime: page.estimatedReadTime, // keep original; UI localizes display
+      contentMarkdownEn: page.contentMarkdownEn || en.contentMarkdownEn,
+      keyTakeawaysEn: page.keyTakeawaysEn || en.keyTakeawaysEn,
+      ciscoTipEn: page.ciscoTipEn || en.ciscoTipEn,
+      interactiveCheck: page.interactiveCheck
+        ? {
+            ...page.interactiveCheck,
+            questionEn: page.interactiveCheck.questionEn || en.questionEn,
+            optionsEn: page.interactiveCheck.optionsEn || en.optionsEn,
+            explanationEn: page.interactiveCheck.explanationEn || en.explanationEn,
+          }
+        : {
+            questionAr: en.questionEn,
+            questionEn: en.questionEn,
+            optionsAr: en.optionsEn,
+            optionsEn: en.optionsEn,
+            correctIndex: 0,
+            explanationAr: en.explanationEn,
+            explanationEn: en.explanationEn,
+          },
+    };
+  });
 }
 
 /**

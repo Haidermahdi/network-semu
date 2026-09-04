@@ -31,31 +31,40 @@ import {
   Info
 } from 'lucide-react';
 import { HUMAN_NETWORK_STORIES } from '../data/humanNetworkStoriesData';
-import { HumanNetworkStory, StreetCharacter, StreetStoryStep, Language } from '../types';
-import { PageHeader, ContentPanel } from './ui/ContentDisplay';
+import { HumanNetworkStory, StreetCharacter, StreetStoryStep, Language, CurriculumTrack } from '../types';
+import { ContentPanel } from './ui/ContentDisplay';
 import { 
   NetworkDeviceTooltip, 
   ComponentQuickTooltip, 
   inferDeviceTechnicalProfile 
 } from './NetworkDeviceTooltip';
 import { getLocalizedStory, STATIC_STORIES_TRANSLATIONS } from '../utils/storyTranslations';
+import { pickText } from '../utils/localePick';
 
 interface RealLifeNetworkProps {
   lang?: Language;
+  userTrack?: CurriculumTrack;
   onNavigateToLab?: (scenarioId: string) => void;
 }
 
-type StoryCategory = 'all' | 'switching' | 'routing' | 'security' | 'services' | 'cloud_overlay' | 'wan_advanced';
+type StoryCategory = 'all' | 'foundations' | 'switching' | 'routing' | 'security' | 'services' | 'cloud_overlay' | 'wan_advanced';
 
 const CATEGORIES: { id: StoryCategory; labelAr: string; labelEn: string; icon: any }[] = [
-  { id: 'all', labelAr: 'جميع السيناريوهات', labelEn: 'All Stories', icon: Layers },
-  { id: 'switching', labelAr: 'التبديل والطبقة الثانية (L2)', labelEn: 'Switching & L2', icon: Activity },
-  { id: 'routing', labelAr: 'التوجيه والـ IPv6 (L3)', labelEn: 'Routing & L3', icon: Navigation },
-  { id: 'security', labelAr: 'الأمن والجدران النارية', labelEn: 'Security & Firewalls', icon: Shield },
-  { id: 'services', labelAr: 'الخدمات (DHCP / DNS / QoS)', labelEn: 'Network Services', icon: Radio },
-  { id: 'cloud_overlay', labelAr: 'السحابة ومراكز البيانات (VXLAN)', labelEn: 'Cloud & Overlays', icon: Cpu },
-  { id: 'wan_advanced', labelAr: 'الشبكات المتقدمة (MPLS / SD-WAN)', labelEn: 'Advanced WAN', icon: Compass }
+  { id: 'all', labelAr: 'الكل', labelEn: 'All', icon: Layers },
+  { id: 'foundations', labelAr: 'الأسس', labelEn: 'Foundations', icon: BookOpen },
+  { id: 'switching', labelAr: 'L2', labelEn: 'L2', icon: Activity },
+  { id: 'routing', labelAr: 'L3', labelEn: 'L3', icon: Navigation },
+  { id: 'security', labelAr: 'أمن', labelEn: 'Security', icon: Shield },
+  { id: 'services', labelAr: 'خدمات', labelEn: 'Services', icon: Radio },
+  { id: 'cloud_overlay', labelAr: 'سحابة', labelEn: 'Cloud', icon: Cpu },
+  { id: 'wan_advanced', labelAr: 'WAN', labelEn: 'WAN', icon: Compass }
 ];
+
+const TRACK_LABEL: Record<CurriculumTrack, { ar: string; en: string; exam: string }> = {
+  ccna: { ar: 'CCNA', en: 'CCNA', exam: '200-301' },
+  ccnp: { ar: 'CCNP', en: 'CCNP', exam: 'ENCOR/ENARSI' },
+  ccie: { ar: 'CCIE', en: 'CCIE', exam: 'EI' },
+};
 
 // Avatar helper based on avatarRole
 const getAvatarIcon = (role: string) => {
@@ -83,9 +92,15 @@ const getAvatarIcon = (role: string) => {
 
 export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({ 
   lang = 'ar',
+  userTrack = 'ccna',
   onNavigateToLab 
 }) => {
-  const [selectedStoryId, setSelectedStoryId] = useState<string>(HUMAN_NETWORK_STORIES[0].id);
+  const trackStories = React.useMemo(
+    () => HUMAN_NETWORK_STORIES.filter(s => (s.track || 'ccna') === userTrack),
+    [userTrack]
+  );
+
+  const [selectedStoryId, setSelectedStoryId] = useState<string>(trackStories[0]?.id || HUMAN_NETWORK_STORIES[0].id);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [selectedCharacter, setSelectedCharacter] = useState<StreetCharacter | null>(null);
@@ -93,6 +108,15 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
   const [modalDeviceChar, setModalDeviceChar] = useState<StreetCharacter | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<StoryCategory>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  useEffect(() => {
+    if (!trackStories.some(s => s.id === selectedStoryId) && trackStories[0]) {
+      setSelectedStoryId(trackStories[0].id);
+      setCurrentStepIndex(0);
+      setIsPlaying(false);
+      setSelectedCategory('all');
+    }
+  }, [userTrack, trackStories, selectedStoryId]);
 
   // Component state to cache dynamically translated stories from Gemini API
   const [dynamicTranslations, setDynamicTranslations] = useState<Record<string, HumanNetworkStory>>(() => {
@@ -147,43 +171,35 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
     return () => { isMounted = false; };
   }, [selectedStoryId, lang, dynamicTranslations]);
 
-  // Get localized stories using static mappings or dynamic translations
+  // Get localized stories for the active certification track only
   const localizedNetworkStories = React.useMemo(() => {
-    return HUMAN_NETWORK_STORIES.map(story => {
+    return trackStories.map(story => {
       if (lang === 'ar') return story;
-      
-      // 1. If we have a dynamic Gemini translation, prefer it
-      if (dynamicTranslations[story.id]) {
-        return dynamicTranslations[story.id];
-      }
-      // 2. Otherwise, use static pre-translation or structural fallback
+      if (dynamicTranslations[story.id]) return dynamicTranslations[story.id];
       return getLocalizedStory(story, lang);
     });
-  }, [lang, dynamicTranslations]);
+  }, [lang, dynamicTranslations, trackStories]);
 
-  const activeStory: HumanNetworkStory = localizedNetworkStories.find(s => s.id === selectedStoryId) || localizedNetworkStories[0];
+  const activeStory: HumanNetworkStory = localizedNetworkStories.find(s => s.id === selectedStoryId) || localizedNetworkStories[0] || getLocalizedStory(HUMAN_NETWORK_STORIES[0], lang);
   const currentStep: StreetStoryStep = activeStory.steps[currentStepIndex] || activeStory.steps[0];
+  const trackInfo = TRACK_LABEL[userTrack];
 
-  // Filtered stories logic
+  // Filtered stories within the active track
   const filteredStories = localizedNetworkStories.filter(story => {
-    // Category match
     if (selectedCategory !== 'all') {
-      if (story.category) {
-        if (story.category !== selectedCategory) return false;
-      } else {
-        // Fallback inference for existing stories
-        const matchesCategory = 
-          (selectedCategory === 'switching' && (story.id.includes('arp') || story.id.includes('stp') || story.id.includes('vlan') || story.id.includes('port-security'))) ||
-          (selectedCategory === 'routing' && (story.id.includes('ttl') || story.id.includes('dijkstra') || story.id.includes('bgp') || story.id.includes('eigrp') || story.id.includes('hsrp') || story.id.includes('ipv6'))) ||
-          (selectedCategory === 'security' && (story.id.includes('ipsec') || story.id.includes('acl') || story.id.includes('port-security'))) ||
-          (selectedCategory === 'services' && (story.id.includes('nat') || story.id.includes('tcp') || story.id.includes('dhcp') || story.id.includes('dns') || story.id.includes('qos'))) ||
-          (selectedCategory === 'cloud_overlay' && (story.id.includes('vxlan'))) ||
-          (selectedCategory === 'wan_advanced' && (story.id.includes('mpls') || story.id.includes('sdwan')));
-        if (!matchesCategory) return false;
-      }
+      const cat = story.category || (
+        (story.id.includes('osi') || story.id.includes('subnet') || story.id.includes('encapsulation')) ? 'foundations' :
+        (story.id.includes('arp') || story.id.includes('stp') || story.id.includes('vlan') || story.id.includes('lacp') || story.id.includes('cdp') || story.id.includes('wireless') || story.id.includes('port-security')) ? 'switching' :
+        (story.id.includes('ttl') || story.id.includes('dijkstra') || story.id.includes('bgp') || story.id.includes('eigrp') || story.id.includes('hsrp') || story.id.includes('ipv6') || story.id.includes('ospf') || story.id.includes('static') || story.id.includes('cef') || story.id.includes('rr') || story.id.includes('pim')) ? 'routing' :
+        (story.id.includes('ipsec') || story.id.includes('acl') || story.id.includes('copp') || story.id.includes('macsec') || story.id.includes('snooping')) ? 'security' :
+        (story.id.includes('nat') || story.id.includes('dhcp') || story.id.includes('dns') || story.id.includes('qos') || story.id.includes('ntp') || story.id.includes('rest') || story.id.includes('pyats') || story.id.includes('tcp')) ? 'services' :
+        (story.id.includes('vxlan') || story.id.includes('sda')) ? 'cloud_overlay' :
+        (story.id.includes('mpls') || story.id.includes('dmvpn') || story.id.includes('sdwan') || story.id.includes('segment')) ? 'wan_advanced' :
+        'all'
+      );
+      if (cat !== selectedCategory) return false;
     }
 
-    // Search query match
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       const matchAr = story.titleAr.toLowerCase().includes(q) || story.storySummaryAr.toLowerCase().includes(q);
@@ -277,137 +293,137 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
   };
 
   return (
-    <div className={`space-y-5 ${lang === 'ar' ? 'dir-rtl text-right' : 'dir-ltr text-left'}`}>
-      <PageHeader
-        icon={<Compass className="w-5 h-5" />}
-        title={lang === 'ar' ? 'شبكات من واقعنا: المكتبة الشاملة للسيناريوهات المعتمدة' : 'Real-Life Network Stories: Comprehensive Curriculum Library'}
-        description={lang === 'ar'
-          ? `شاهد أشخاصاً ومواقف حية تجسد بروتوكولات سيسكو (Switching, Routing, Security, Services, Cloud Overlays) وكأنك في شوارع ومطارات ومؤسسات واقعية (${HUMAN_NETWORK_STORIES.length} سيناريو متكامل).`
-          : `Explore ${HUMAN_NETWORK_STORIES.length} comprehensive real-world scenarios representing Cisco CCNA, CCNP, and CCIE protocols in everyday analogies.`}
-        badge={lang === 'ar' ? `${HUMAN_NETWORK_STORIES.length} سيناريو معتمد` : `${HUMAN_NETWORK_STORIES.length} Scenarios`}
-        action={onNavigateToLab ? (
+    <div className={`space-y-4 ${lang === 'ar' ? 'dir-rtl text-right' : 'dir-ltr text-left'}`}>
+      <div className="flex flex-wrap items-center justify-between gap-3 px-0.5">
+        <div className="min-w-0 space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Compass className="w-4 h-4 text-amber-400 shrink-0" />
+            <h2 className="text-base sm:text-lg font-black text-white">
+              {lang === 'ar' ? 'شبكات من واقعنا' : 'Real-Life Network Stories'}
+            </h2>
+            <span className="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/25 text-[10px] font-bold">
+              {trackInfo.en} · {trackStories.length} {lang === 'ar' ? 'سيناريو' : 'stories'}
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-500">
+            {lang === 'ar'
+              ? `سيناريوهات مسار ${trackInfo.ar} فقط (${trackInfo.exam}) حسب مستواك الدراسي.`
+              : `Only ${trackInfo.en} (${trackInfo.exam}) scenarios for your learning track.`}
+          </p>
+        </div>
+        {onNavigateToLab ? (
           <button
             onClick={() => onNavigateToLab(getRelatedLabScenarioId(activeStory.id))}
-            className="btn-primary shrink-0"
+            className="px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/25 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
           >
-            <Cpu className="w-4 h-4" />
-            <span>{lang === 'ar' ? 'جرّب في المعمل الحي' : 'Try in Live Lab'}</span>
+            <Cpu className="w-3.5 h-3.5" />
+            <span>{lang === 'ar' ? 'المعمل الحي' : 'Live Lab'}</span>
           </button>
-        ) : undefined}
-      />
-
-      {/* Category Filter Tabs & Search Bar */}
-      <div className="space-y-3">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          {/* Categories */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin">
-            {CATEGORIES.map(cat => {
-              const Icon = cat.icon;
-              const isCatActive = selectedCategory === cat.id;
-              // Count for this category
-              const count = cat.id === 'all' 
-                ? HUMAN_NETWORK_STORIES.length 
-                : HUMAN_NETWORK_STORIES.filter(s => {
-                    if (s.category) return s.category === cat.id;
-                    if (cat.id === 'switching') return s.id.includes('arp') || s.id.includes('stp') || s.id.includes('vlan') || s.id.includes('port-security');
-                    if (cat.id === 'routing') return s.id.includes('ttl') || s.id.includes('dijkstra') || s.id.includes('bgp') || s.id.includes('eigrp') || s.id.includes('hsrp') || s.id.includes('ipv6');
-                    if (cat.id === 'security') return s.id.includes('ipsec') || s.id.includes('acl') || s.id.includes('port-security');
-                    if (cat.id === 'services') return s.id.includes('nat') || s.id.includes('tcp') || s.id.includes('dhcp') || s.id.includes('dns') || s.id.includes('qos');
-                    if (cat.id === 'cloud_overlay') return s.id.includes('vxlan');
-                    if (cat.id === 'wan_advanced') return s.id.includes('mpls') || s.id.includes('sdwan');
-                    return false;
-                  }).length;
-
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 shrink-0 transition-all border ${
-                    isCatActive
-                      ? 'bg-[var(--accent-text)] text-slate-950 border-[var(--accent-text)] shadow-sm font-bold'
-                      : 'surface hover:border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{lang === 'ar' ? cat.labelAr : cat.labelEn}</span>
-                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                    isCatActive ? 'bg-slate-950/20 text-slate-950 font-mono font-bold' : 'bg-slate-800 text-slate-400 font-mono'
-                  }`}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Search Input */}
-          <div className="relative min-w-[220px]">
-            <Search className={`w-4 h-4 absolute top-1/2 -translate-y-1/2 ${lang === 'en' ? 'left-3' : 'right-3'} text-[var(--text-muted)] pointer-events-none`} />
-            <input
-              type="text"
-              placeholder={lang === 'ar' ? 'بحث عن قصة أو بروتوكول...' : 'Search scenario or protocol...'}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full bg-[var(--surface-sunken)] border border-[var(--border-subtle)] rounded-lg py-1.5 ${
-                lang === 'en' ? 'pl-9 pr-3 text-left' : 'pr-9 pl-3 text-right'
-              } text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-text)]`}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className={`absolute top-1/2 -translate-y-1/2 ${lang === 'en' ? 'right-2' : 'left-2'} text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] px-1`}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Stories Grid Selector */}
-        {filteredStories.length === 0 ? (
-          <div className="surface p-8 text-center rounded-xl border border-dashed border-[var(--border-subtle)]">
-            <Filter className="w-8 h-8 mx-auto text-[var(--text-muted)] mb-2" />
-            <p className="caption-text text-[var(--text-secondary)] mb-3">
-              {lang === 'ar' ? 'لم يتم العثور على أي سيناريو يطابق معايير البحث' : 'No scenarios matched your search filter'}
-            </p>
-            <button
-              onClick={() => { setSelectedCategory('all'); setSearchQuery(''); }}
-              className="btn-secondary text-xs"
-            >
-              {lang === 'ar' ? 'إعادة ضبط الفلتر' : 'Reset Filter'}
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 max-h-[220px] overflow-y-auto p-1 scrollbar-thin">
-            {filteredStories.map(story => {
-              const isSelected = selectedStoryId === story.id;
-              const difficultyText = lang === 'ar'
-                ? story.difficulty.split(' ')[0]
-                : (story.difficultyEn || (story.difficulty.includes('Beginner') ? 'Beginner' : story.difficulty.includes('Intermediate') ? 'Intermediate' : story.difficulty.includes('Advanced') ? 'Advanced' : 'Expert'));
-              return (
-                <button
-                  key={story.id}
-                  onClick={() => handleStoryChange(story.id)}
-                  className={`p-2.5 rounded-xl ${lang === 'en' ? 'text-left' : 'text-right'} transition-all border flex flex-col gap-1.5 cursor-pointer relative overflow-hidden ${
-                    isSelected
-                      ? 'surface-active border-[var(--accent-text)] ring-1 ring-[var(--accent-text)]/40 shadow-sm'
-                      : 'surface hover:border-[var(--border-default)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <span className="caption-text font-bold text-[10px]">{difficultyText}</span>
-                    <span className="badge text-[10px] py-0 px-1.5 truncate max-w-[120px]">{story.protocolBadge.split('(')[0].trim()}</span>
-                  </div>
-                  <div className="heading-4 text-xs line-clamp-2 leading-snug font-medium">
-                    {lang === 'ar' ? story.titleAr : story.titleEn}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
+        ) : null}
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+        <aside className="lg:col-span-4 xl:col-span-3">
+          <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-3">
+            <div className="relative">
+              <Search className={`w-3.5 h-3.5 absolute top-1/2 -translate-y-1/2 text-slate-500 ${lang === 'en' ? 'left-3' : 'right-3'}`} />
+              <input
+                type="text"
+                placeholder={lang === 'ar' ? 'بحث ضمن المسار...' : 'Search in track...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`w-full py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-amber-500/40 ${
+                  lang === 'en' ? 'pl-9 pr-3 text-left' : 'pr-9 pl-3 text-right'
+                }`}
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-1">
+              {CATEGORIES.map(cat => {
+                const Icon = cat.icon;
+                const accurateCount = cat.id === 'all'
+                  ? localizedNetworkStories.length
+                  : localizedNetworkStories.filter(s => {
+                      const c = s.category || '';
+                      if (c === cat.id) return true;
+                      if (c) return false;
+                      const id = s.id;
+                      if (cat.id === 'foundations') return id.includes('osi') || id.includes('subnet') || id.includes('encapsulation');
+                      if (cat.id === 'switching') return id.includes('arp') || id.includes('stp') || id.includes('vlan') || id.includes('lacp') || id.includes('cdp') || id.includes('wireless') || id.includes('port-security');
+                      if (cat.id === 'routing') return id.includes('ttl') || id.includes('ospf') || id.includes('bgp') || id.includes('eigrp') || id.includes('hsrp') || id.includes('ipv6') || id.includes('static') || id.includes('dijkstra') || id.includes('cef') || id.includes('rr') || id.includes('pim');
+                      if (cat.id === 'security') return id.includes('ipsec') || id.includes('acl') || id.includes('copp') || id.includes('macsec') || id.includes('snooping');
+                      if (cat.id === 'services') return id.includes('nat') || id.includes('dhcp') || id.includes('dns') || id.includes('qos') || id.includes('ntp') || id.includes('rest') || id.includes('pyats') || id.includes('tcp');
+                      if (cat.id === 'cloud_overlay') return id.includes('vxlan') || id.includes('sda');
+                      if (cat.id === 'wan_advanced') return id.includes('mpls') || id.includes('dmvpn') || id.includes('sdwan') || id.includes('segment');
+                      return false;
+                    }).length;
+                if (cat.id !== 'all' && accurateCount === 0) return null;
+                const isCatActive = selectedCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 border transition-all cursor-pointer ${
+                      isCatActive
+                        ? 'bg-amber-500 text-black border-amber-400'
+                        : 'bg-white/[0.03] text-slate-400 border-white/[0.06] hover:text-slate-200'
+                    }`}
+                  >
+                    <Icon className="w-3 h-3" />
+                    <span>{lang === 'ar' ? cat.labelAr : cat.labelEn}</span>
+                    <span className="opacity-70">{accurateCount}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="space-y-1 max-h-[62vh] overflow-y-auto sidebar-scroll">
+              {filteredStories.length === 0 ? (
+                <div className="p-4 text-center text-xs text-slate-500">
+                  {lang === 'ar' ? 'لا نتائج في هذا المسار' : 'No matches in this track'}
+                  <button
+                    onClick={() => { setSelectedCategory('all'); setSearchQuery(''); }}
+                    className="block mx-auto mt-2 text-amber-400 hover:underline"
+                  >
+                    {lang === 'ar' ? 'إعادة الضبط' : 'Reset'}
+                  </button>
+                </div>
+              ) : (
+                filteredStories.map(story => {
+                  const isSelected = selectedStoryId === story.id;
+                  const difficultyText = lang === 'ar'
+                    ? story.difficulty.split(' ')[0]
+                    : (story.difficultyEn || (story.difficulty.includes('Beginner') ? 'Beginner' : story.difficulty.includes('Intermediate') ? 'Intermediate' : story.difficulty.includes('Advanced') ? 'Advanced' : 'Expert'));
+                  return (
+                    <button
+                      key={story.id}
+                      onClick={() => handleStoryChange(story.id)}
+                      className={`w-full p-2.5 rounded-xl border text-xs transition-all cursor-pointer ${
+                        lang === 'en' ? 'text-left' : 'text-right'
+                      } ${
+                        isSelected
+                          ? 'bg-amber-500/15 border-amber-500/40 text-amber-100'
+                          : 'bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="text-[10px] font-bold text-slate-500">{difficultyText}</span>
+                        <span className="text-[10px] font-mono text-amber-400/80 truncate max-w-[55%]">
+                          {story.protocolBadge.split('(')[0].trim()}
+                        </span>
+                      </div>
+                      <div className={`font-bold leading-snug line-clamp-2 ${isSelected ? 'text-white' : ''}`}>
+                        {lang === 'ar' ? story.titleAr : story.titleEn}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </aside>
+
+        <div className="lg:col-span-8 xl:col-span-9 space-y-3 min-w-0">
       {/* Main Street Stage */}
       <div className="relative w-full surface p-4 sm:p-6 overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
         <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.03)_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
@@ -427,78 +443,33 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
           </div>
         </div>
 
-        {/* Interactive Step Progress & Timeline Bar (شريط التقدم في الخطوات وأزرار التحكم) */}
-        <div className="relative z-10 my-3 p-3 surface-elevated rounded-2xl border border-[var(--border-subtle)] shadow-lg bg-slate-900/90 backdrop-blur-sm">
-          {/* Top Row: Playback Controls & Progress Indicator */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-2.5">
-            {/* Playback Action Buttons */}
-            <div className="flex items-center gap-1.5">
-              <button 
-                onClick={handleReset} 
-                title={lang === 'ar' ? 'إعادة من الخطوة الأولى' : 'Restart from Step 1'} 
-                className="p-1.5 rounded-xl surface border border-[var(--border-subtle)] hover:border-amber-500/40 text-slate-300 transition-colors"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={handleStepBackward} 
-                disabled={currentStepIndex === 0} 
-                title={lang === 'ar' ? 'الخطوة السابقة' : 'Previous Step'} 
-                className="p-1.5 rounded-xl surface border border-[var(--border-subtle)] hover:border-amber-500/40 disabled:opacity-30 text-slate-300 transition-colors"
-              >
-                <SkipBack className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={() => setIsPlaying(!isPlaying)} 
-                className="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-500/20"
-              >
-                {isPlaying ? (
-                  <>
-                    <Pause className="w-3.5 h-3.5" />
-                    <span>{lang === 'ar' ? 'إيقاف مؤقت' : 'Pause'}</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>{lang === 'ar' ? 'تشغيل تلقائي' : 'Auto Play'}</span>
-                  </>
-                )}
-              </button>
-              <button 
-                onClick={handleStepForward} 
-                disabled={currentStepIndex === activeStory.steps.length - 1} 
-                title={lang === 'ar' ? 'الخطوة التالية' : 'Next Step'} 
-                className="p-1.5 rounded-xl surface border border-[var(--border-subtle)] hover:border-amber-500/40 disabled:opacity-30 text-slate-300 transition-colors"
-              >
-                <SkipForward className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Current Step Label & Completion Percentage */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-[var(--accent-text)] font-bold hidden sm:inline-block">
-                {lang === 'ar' 
-                  ? `الخطوة ${currentStepIndex + 1} من ${activeStory.steps.length}`
-                  : `Step ${currentStepIndex + 1} of ${activeStory.steps.length}`}
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                {Math.round(((currentStepIndex + 1) / activeStory.steps.length) * 100)}% {lang === 'ar' ? 'مكتمل' : 'Done'}
+        {/* Step navigator only — playback stays at the bottom so details stay visible */}
+        <div className="relative z-10 my-3 px-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+            <span className="text-[11px] font-mono text-amber-400/90 font-bold">
+              {lang === 'ar'
+                ? `الخطوة ${currentStepIndex + 1} من ${activeStory.steps.length}`
+                : `Step ${currentStepIndex + 1} of ${activeStory.steps.length}`}
+            </span>
+            <div className="flex items-center gap-2 min-w-[120px] max-w-[180px] flex-1 sm:flex-none" dir="ltr">
+              <div className="flex-1 h-1.5 bg-slate-950/80 rounded-full overflow-hidden border border-slate-800">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-amber-500 to-cyan-400 rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${((currentStepIndex + 1) / activeStory.steps.length) * 100}%` }}
+                  transition={{ type: 'spring', stiffness: 100, damping: 18 }}
+                />
+              </div>
+              <span className="text-[10px] font-mono text-slate-500 shrink-0">
+                {Math.round(((currentStepIndex + 1) / activeStory.steps.length) * 100)}%
               </span>
             </div>
           </div>
 
-          {/* Continuous Glowing Progress Track */}
-          <div className="w-full h-2 bg-slate-950/80 rounded-full overflow-hidden mb-3 p-0.5 border border-slate-800">
-            <motion.div 
-              className="h-full bg-gradient-to-r from-amber-500 via-amber-400 to-cyan-400 rounded-full shadow-sm"
-              initial={{ width: 0 }}
-              animate={{ width: `${((currentStepIndex + 1) / activeStory.steps.length) * 100}%` }}
-              transition={{ type: 'spring', stiffness: 100, damping: 18 }}
-            />
-          </div>
-
-          {/* Interactive Step Milestones Pills (أزرار ومحطات الخطوات المباشرة) */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+          <div
+            className={`flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin ${lang === 'ar' ? 'justify-end' : 'justify-start'}`}
+            dir={lang === 'ar' ? 'rtl' : 'ltr'}
+          >
             {activeStory.steps.map((st, idx) => {
               const isCurrent = currentStepIndex === idx;
               const isPast = currentStepIndex > idx;
@@ -507,13 +478,15 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
                   key={st.stepNumber}
                   onClick={() => { setCurrentStepIndex(idx); setIsPlaying(false); }}
                   className={`group flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all shrink-0 cursor-pointer ${
+                    lang === 'ar' ? 'flex-row-reverse' : ''
+                  } ${
                     isCurrent
-                      ? 'bg-[var(--accent)] text-slate-950 shadow-md shadow-amber-400/20 ring-2 ring-amber-400/50'
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-400/20'
                       : isPast
                       ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-900/60'
                       : 'bg-slate-950/80 text-slate-400 border border-slate-800 hover:border-slate-700 hover:text-slate-200'
                   }`}
-                  title={lang === 'ar' ? st.titleAr : (st.titleEn || st.titleAr)}
+                  title={pickText(lang, st.titleAr, st.titleEn, `Step ${st.stepNumber}`)}
                 >
                   <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
                     isCurrent ? 'bg-slate-950 text-amber-400' : isPast ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-400'
@@ -521,7 +494,7 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
                     {isPast ? '✓' : idx + 1}
                   </span>
                   <span className="text-[11px] font-sans font-medium whitespace-nowrap max-w-[130px] sm:max-w-[190px] truncate">
-                    {(lang === 'ar' ? st.titleAr : (st.titleEn || st.titleAr)).replace(/^\d+\.\s*/, '')}
+                    {pickText(lang, st.titleAr, st.titleEn, `Step ${st.stepNumber}`).replace(/^\d+\.\s*/, '')}
                   </span>
                 </button>
               );
@@ -542,22 +515,46 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
         </div>
 
         {/* Highlighted Event Banner */}
-        {(lang === 'ar' ? currentStep.highlightedEventAr : (currentStep.highlightedEventEn || currentStep.highlightedEventAr)) && (
+        {pickText(lang, currentStep.highlightedEventAr, currentStep.highlightedEventEn) && (
           <div className="relative z-10 mb-3 flex justify-center">
             <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-[var(--surface-sunken)] border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)]">
               <Sparkles className="w-3.5 h-3.5 text-[var(--accent-text)] animate-pulse" />
               <span className="font-medium">
-                {lang === 'ar' ? currentStep.highlightedEventAr : (currentStep.highlightedEventEn || currentStep.highlightedEventAr)}
+                {pickText(lang, currentStep.highlightedEventAr, currentStep.highlightedEventEn)}
               </span>
             </div>
           </div>
         )}
 
-        {/* Physical Network Link & Transmission Animation (Shared LTR Coordinate Plane) */}
-        <div className="relative w-full max-w-5xl mx-auto my-3 dir-ltr">
-          {/* Transmission Wire Container */}
-          <div className="relative h-12 flex items-center justify-center">
-            {/* Base cable line with interactive Tooltip */}
+        {/* Physical Network Link & Transmission Animation */}
+        <div className="relative w-full max-w-5xl mx-auto my-5 dir-ltr px-3 sm:px-6">
+          <div className="relative h-16 w-full">
+            {/* Full-width cable — plain elements so tooltip wrappers cannot collapse the bar */}
+            <div
+              className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-5 z-[1] pointer-events-none"
+              aria-hidden
+            >
+              {/* Track bed */}
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[6px] rounded-full bg-slate-800 border border-slate-500/70 shadow-[0_0_0_1px_rgba(15,23,42,0.8)]" />
+              {/* Dashed copper cable — always visible */}
+              <div
+                className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[5px] rounded-full"
+                style={{
+                  backgroundImage:
+                    'repeating-linear-gradient(90deg, #fbbf24 0 12px, #0f172a 12px 20px)',
+                }}
+              />
+              {/* Active segment between Tx / Rx */}
+              <motion.div
+                className="absolute top-1/2 -translate-y-1/2 h-[7px] rounded-full bg-gradient-to-r from-cyan-400 via-amber-400 to-emerald-400 shadow-[0_0_16px_rgba(34,211,238,0.7)]"
+                animate={{
+                  left: `${Math.min(senderPos, receiverPos)}%`,
+                  width: `${Math.max(10, Math.abs(receiverPos - senderPos))}%`,
+                }}
+                transition={{ type: 'spring', stiffness: 120, damping: 18 }}
+              />
+            </div>
+
             <ComponentQuickTooltip
               title={lang === 'ar' ? 'كابل ووسيط النقل الفيزيائي (Physical Transmission Medium - L1)' : 'Physical Cable Link (L1)'}
               category="Layer 1 Physical"
@@ -566,25 +563,14 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
                 : 'Copper/fiber medium carrying serialized electrical/optical pulses in Full-Duplex mode.'}
               ciscoConcept="Duplex: Full-Duplex | Speed: 1000Mbps"
               side="bottom"
-              className="absolute left-6 right-6 h-1"
+              className="!absolute left-0 right-0 top-1/2 -translate-y-1/2 !block w-auto h-4 z-[1] cursor-help"
+              lang={lang}
             >
-              <div className="w-full h-1 bg-[var(--border-subtle)] rounded-full overflow-hidden cursor-help relative">
-                {/* Active signal beam between sender and receiver */}
-                <motion.div
-                  className="h-full bg-gradient-to-r from-cyan-500 via-[var(--accent)] to-emerald-400"
-                  animate={{
-                    left: `${Math.min(senderPos, receiverPos)}%`,
-                    width: `${Math.max(6, Math.abs(receiverPos - senderPos))}%`
-                  }}
-                  transition={{ type: 'spring', stiffness: 120, damping: 18 }}
-                  style={{ position: 'absolute' }}
-                />
-              </div>
+              <div className="w-full h-4" />
             </ComponentQuickTooltip>
 
-            {/* Sender Node Port Indicator with Tooltip */}
-            <div 
-              className="absolute -translate-x-1/2 z-10"
+            <div
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
               style={{ left: `${senderPos}%` }}
             >
               <ComponentQuickTooltip
@@ -595,16 +581,16 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
                   : 'Hardware interface port transmitting serialized Ethernet frames from buffer onto physical wire.'}
                 ciscoConcept="Interface Tx Counters & Queue"
                 side="top"
+                lang={lang}
               >
-                <div className="w-5 h-5 rounded-full border-2 border-cyan-400 bg-slate-900 flex items-center justify-center cursor-help transition-all shadow-md shadow-cyan-500/20">
-                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                <div className="w-7 h-7 rounded-full border-2 border-cyan-400 bg-slate-950 flex items-center justify-center cursor-help shadow-md shadow-cyan-500/40">
+                  <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
                 </div>
               </ComponentQuickTooltip>
             </div>
 
-            {/* Receiver Node Port Indicator with Tooltip */}
-            <div 
-              className="absolute -translate-x-1/2 z-10"
+            <div
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
               style={{ left: `${receiverPos}%` }}
             >
               <ComponentQuickTooltip
@@ -615,32 +601,24 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
                   : 'Hardware interface port receiving signals and validating Frame Check Sequence (FCS) integrity.'}
                 ciscoConcept="CRC / FCS Check | Rx Counters"
                 side="top"
+                lang={lang}
               >
-                <div className="w-5 h-5 rounded-full border-2 border-emerald-400 bg-slate-900 flex items-center justify-center cursor-help transition-all shadow-md shadow-emerald-500/20">
-                  <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                <div className="w-7 h-7 rounded-full border-2 border-emerald-400 bg-slate-950 flex items-center justify-center cursor-help shadow-md shadow-emerald-500/40">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
                 </div>
               </ComponentQuickTooltip>
             </div>
 
-            {/* Animated Packet / Frame Capsule with Tooltip */}
             <motion.div
               key={`${activeStory.id}-${currentStep.stepNumber}`}
-              initial={{ 
-                left: `${senderPos}%`, 
-                scale: 0.85, 
-                opacity: 0.5 
+              initial={{ left: `${senderPos}%`, scale: 0.85, opacity: 0.5 }}
+              animate={{
+                left: isSameActor ? `${senderPos}%` : `${senderPos * 0.2 + receiverPos * 0.8}%`,
+                scale: 1,
+                opacity: 1,
               }}
-              animate={{ 
-                left: isSameActor ? `${senderPos}%` : `${senderPos * 0.2 + receiverPos * 0.8}%`, 
-                scale: 1, 
-                opacity: 1 
-              }}
-              transition={{ 
-                type: 'spring', 
-                stiffness: 95, 
-                damping: 15 
-              }}
-              className="absolute -translate-x-1/2 z-20"
+              transition={{ type: 'spring', stiffness: 95, damping: 15 }}
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-20"
             >
               <ComponentQuickTooltip
                 title={lang === 'ar' ? `وحدة بيانات البروتوكول PDU (${currentStep.payloadType})` : `Protocol Data Unit (${currentStep.payloadType})`}
@@ -650,8 +628,9 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
                   : `Encapsulated PDU with L2 MAC, L3 IP headers, and payload: ${currentStep.payloadType}`}
                 ciscoConcept="Encapsulation: Ethernet II + IPv4/IPv6"
                 side="bottom"
+                lang={lang}
               >
-                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--accent)] text-slate-950 text-xs font-bold shadow-lg border border-amber-300 cursor-help">
+                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500 text-slate-950 text-xs font-bold shadow-lg border border-amber-300 cursor-help">
                   <Send className={`w-3.5 h-3.5 ${isMovingRight ? '' : 'rotate-180'}`} />
                   <span className="font-mono text-[11px] font-bold whitespace-nowrap">{currentStep.payloadType}</span>
                   {isMovingRight ? (
@@ -671,7 +650,17 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
             const isActive = char.id === currentStep.activeCharacterId;
             const isSender = char.id === currentStep.fromCharacterId;
             const isReceiver = char.id === currentStep.toCharacterId;
-            const speech = currentStep.speechBubbles[char.id];
+            const speech = lang === 'ar'
+              ? currentStep.speechBubbles[char.id]
+              : (currentStep.speechBubblesEn?.[char.id] || currentStep.speechBubbles[char.id]);
+            const localizedSpeech = pickText(
+              lang,
+              currentStep.speechBubbles[char.id],
+              currentStep.speechBubblesEn?.[char.id],
+              ''
+            );
+            // Prefer localizedSpeech for display when English
+            const speechText = lang === 'en' ? localizedSpeech : speech;
             const isSelected = selectedCharacter?.id === char.id;
             const techProfile = inferDeviceTechnicalProfile(char, activeStory);
             const TechIcon = techProfile.icon;
@@ -754,9 +743,9 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
                 </div>
 
                 {/* Speech Bubble Above Card */}
-                {speech && (
+                {speechText && (
                   <div className={`w-full mb-3 px-3 py-2 rounded-xl text-xs bg-amber-500/15 border border-amber-500/40 text-amber-300 relative shadow-sm ${lang === 'ar' ? 'text-right dir-rtl' : 'text-left dir-ltr'}`}>
-                    <p className="line-clamp-3 leading-snug font-medium text-[11px]">{speech}</p>
+                    <p className="line-clamp-3 leading-snug font-medium text-[11px]">{speechText}</p>
                     <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-900 border-r border-b border-amber-500/40 rotate-45" />
                   </div>
                 )}
@@ -831,7 +820,7 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
                 {/* Character Name & Role */}
                 <div className="mt-2 w-full text-center">
                   <h4 className="heading-4 text-xs font-bold line-clamp-1">{lang === 'ar' ? char.nameAr : char.nameEn}</h4>
-                  <p className="caption-text text-[11px] text-[var(--text-muted)] line-clamp-1 mt-0.5">{lang === 'ar' ? char.roleAr : (char.roleEn || char.roleAr)}</p>
+                  <p className="caption-text text-[11px] text-[var(--text-muted)] line-clamp-1 mt-0.5">{pickText(lang, char.roleAr, char.roleEn, 'Network node')}</p>
                 </div>
 
                 {/* Carrying Item with Tooltip */}
@@ -855,44 +844,63 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
           })}
         </div>
 
-        {/* Step Controls Bar */}
-        <div className="mt-6 pt-4 border-t border-[var(--border-subtle)] flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <button onClick={handleReset} title={lang === 'ar' ? 'إعادة تشغيل' : 'Reset'} className="btn-ghost p-2">
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <button onClick={handleStepBackward} disabled={currentStepIndex === 0} title={lang === 'ar' ? 'الخطوة السابقة' : 'Previous'} className="btn-ghost p-2 disabled:opacity-30">
-              <SkipBack className="w-4 h-4" />
-            </button>
-            <button onClick={() => setIsPlaying(!isPlaying)} className="btn-primary px-4">
-              {isPlaying ? (
-                <><Pause className="w-4 h-4" /><span>{lang === 'ar' ? 'إيقاف' : 'Pause'}</span></>
-              ) : (
-                <><Play className="w-4 h-4" /><span>{lang === 'ar' ? 'تشغيل' : 'Play'}</span></>
-              )}
-            </button>
-            <button onClick={handleStepForward} disabled={currentStepIndex === activeStory.steps.length - 1} title={lang === 'ar' ? 'الخطوة التالية' : 'Next'} className="btn-ghost p-2 disabled:opacity-30">
-              <SkipForward className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Numbered Step Buttons */}
-          <div className="flex items-center gap-1.5 flex-wrap justify-center">
+        {/* Playback controls — dir=ltr + order so Arabic numbers land on the physical right */}
+        <div className="mt-6 pt-4 border-t border-[var(--border-subtle)] flex flex-row items-center justify-between gap-3 w-full" dir="ltr">
+          <div
+            className={`flex items-center gap-1.5 flex-wrap justify-center shrink-0 ${lang === 'ar' ? 'order-2' : 'order-1'}`}
+            dir={lang === 'ar' ? 'rtl' : 'ltr'}
+          >
             {activeStory.steps.map((st, idx) => (
               <button
                 key={st.stepNumber}
                 onClick={() => { setCurrentStepIndex(idx); setIsPlaying(false); }}
                 className={`w-8 h-8 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center justify-center ${
                   currentStepIndex === idx
-                    ? 'bg-[var(--accent)] text-black shadow-sm font-black ring-2 ring-[var(--accent)]/40'
+                    ? 'bg-amber-500 text-black shadow-sm ring-2 ring-amber-500/40'
                     : currentStepIndex > idx
-                    ? 'surface-active text-[var(--accent-text)] border border-[var(--accent-text)]/30'
-                    : 'surface text-[var(--text-muted)] hover:text-[var(--text-secondary)] border border-[var(--border-subtle)]'
+                    ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                    : 'bg-white/[0.03] text-slate-500 hover:text-slate-300 border border-white/[0.06]'
                 }`}
               >
                 {idx + 1}
               </button>
             ))}
+          </div>
+
+          <div className={`flex items-center gap-1.5 p-1 rounded-2xl bg-slate-950/60 border border-white/[0.06] ${lang === 'ar' ? 'order-1' : 'order-2'}`} dir="ltr">
+            <button
+              onClick={handleReset}
+              title={lang === 'ar' ? 'إعادة من البداية' : 'Restart'}
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleStepBackward}
+              disabled={currentStepIndex === 0}
+              title={lang === 'ar' ? 'الخطوة السابقة' : 'Previous'}
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.06] disabled:opacity-30 transition-colors cursor-pointer"
+            >
+              <SkipBack className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setIsPlaying(!isPlaying)}
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-colors cursor-pointer"
+            >
+              {isPlaying ? (
+                <><Pause className="w-4 h-4" /><span>{lang === 'ar' ? 'إيقاف' : 'Pause'}</span></>
+              ) : (
+                <><Play className="w-4 h-4 fill-current" /><span>{lang === 'ar' ? 'تشغيل تلقائي' : 'Auto Play'}</span></>
+              )}
+            </button>
+            <button
+              onClick={handleStepForward}
+              disabled={currentStepIndex === activeStory.steps.length - 1}
+              title={lang === 'ar' ? 'الخطوة التالية' : 'Next'}
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.06] disabled:opacity-30 transition-colors cursor-pointer"
+            >
+              <SkipForward className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
@@ -917,15 +925,15 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <ContentPanel 
           label={lang === 'ar' ? 'القصة الواقعية' : 'Real Story'} 
-          title={lang === 'ar' ? currentStep.titleAr : (currentStep.titleEn || currentStep.titleAr)}
+          title={pickText(lang, currentStep.titleAr, currentStep.titleEn, `Step ${currentStep.stepNumber}`)}
         >
-          {lang === 'ar' ? currentStep.storyNarrativeAr : (currentStep.storyNarrativeEn || currentStep.storyNarrativeAr)}
+          {pickText(lang, currentStep.storyNarrativeAr, currentStep.storyNarrativeEn, 'Packet flow in progress.')}
         </ContentPanel>
         <ContentPanel 
           label={lang === 'ar' ? 'المطابقة التقنية' : 'Technical Match'} 
           title={currentStep.ciscoProtocolTerm}
         >
-          {lang === 'ar' ? currentStep.technicalAnalogyAr : (currentStep.technicalAnalogyEn || currentStep.technicalAnalogyAr)}
+          {pickText(lang, currentStep.technicalAnalogyAr, currentStep.technicalAnalogyEn, currentStep.ciscoProtocolTerm)}
         </ContentPanel>
         <div className="p-4 surface space-y-2">
           <div className="flex items-center justify-between">
@@ -1018,6 +1026,8 @@ export const RealLifeNetwork: React.FC<RealLifeNetworkProps> = ({
         onClose={() => setModalDeviceChar(null)}
         lang={lang}
       />
+        </div>
+      </div>
     </div>
   );
 };

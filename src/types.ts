@@ -106,6 +106,7 @@ export interface DiagramSequenceStep {
   labelEn?: string;
   protocolPacket: string;
   detailsAr: string;
+  detailsEn?: string;
   flagOrType?: string;
 }
 
@@ -120,8 +121,8 @@ export interface DiagramData {
   links?: DiagramLink[];
   headerFields?: DiagramHeaderField[];
   sequenceSteps?: DiagramSequenceStep[];
-  stateNodes?: { state: string; labelAr: string; descAr: string; isFinal?: boolean }[];
-  stateTransitions?: { from: string; to: string; triggerAr: string }[];
+  stateNodes?: { state: string; labelAr: string; labelEn?: string; descAr: string; descEn?: string; isFinal?: boolean }[];
+  stateTransitions?: { from: string; to: string; triggerAr: string; triggerEn?: string }[];
 }
 
 export interface BookChapterPage {
@@ -456,6 +457,7 @@ export interface SimulationScenario {
   titleAr: string;
   titleEn: string;
   badge?: string;
+  track?: CurriculumTrack;
   difficulty?: 'simple' | 'complex' | 'very_complex' | 'intermediate' | 'expert';
   difficultyAr?: string;
   category?: 'switching' | 'routing' | 'arp' | 'end_to_end' | 'failover' | 'security' | string;

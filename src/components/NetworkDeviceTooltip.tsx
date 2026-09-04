@@ -525,9 +525,12 @@ export const ComponentQuickTooltip: React.FC<ComponentQuickTooltipProps> = ({
 
   const isEn = lang === 'en';
 
+  const wantsAbsolute = className.includes('absolute');
+  const wantsBlock = className.includes('block') || className.includes('w-full') || className.includes('w-auto');
+
   return (
     <div 
-      className={`relative inline-flex items-center ${className}`}
+      className={`${wantsAbsolute ? '' : 'relative'} ${wantsBlock ? '' : 'inline-flex items-center'} ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => setIsHovered(prev => !prev)}

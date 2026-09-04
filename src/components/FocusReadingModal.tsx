@@ -20,6 +20,7 @@ import { CurriculumTopic, Language, BookChapterPage } from '../types';
 import { MarkdownContent } from './MarkdownContent';
 import { NetworkSchematicDiagram } from './NetworkSchematicDiagram';
 import { InfoCallout, HighlightGrid, ProgressBar } from './ui/ContentDisplay';
+import { pickText, pickTextList, formatReadTime } from '../utils/localePick';
 
 interface FocusReadingModalProps {
   isOpen: boolean;
@@ -144,7 +145,7 @@ export const FocusReadingModal: React.FC<FocusReadingModalProps> = ({
               <span className="text-amber-400 font-mono">
                 {currentPage.pageNumber}/{totalPages}:
               </span>
-              <span>{currentPage.chapterTitleAr}</span>
+              <span>{pickText(lang, currentPage.chapterTitleAr, currentPage.chapterTitleEn)}</span>
             </h2>
           </div>
         </div>
@@ -216,16 +217,16 @@ export const FocusReadingModal: React.FC<FocusReadingModalProps> = ({
             <div>
               <div className="flex items-center gap-2 text-xs font-bold text-amber-400 mb-2">
                 <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30">
-                  {currentPage.badgeAr}
+                  {pickText(lang, currentPage.badgeAr, currentPage.badgeEn, currentPage.chapterTitleEn)}
                 </span>
                 <span className="text-slate-600">•</span>
                 <span className="flex items-center gap-1.5 text-slate-400">
                   <Clock className="w-3.5 h-3.5" />
-                  {currentPage.estimatedReadTime}
+                  {formatReadTime(lang, currentPage.estimatedReadTime)}
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-white leading-tight">
-                {currentPage.chapterTitleAr}
+                {pickText(lang, currentPage.chapterTitleAr, currentPage.chapterTitleEn)}
               </h1>
               <p className="text-xs text-slate-500 font-mono mt-1">
                 {currentPage.chapterTitleEn}
@@ -241,7 +242,15 @@ export const FocusReadingModal: React.FC<FocusReadingModalProps> = ({
 
           {/* Markdown Main Text */}
           <article className={`book-text-body ${getTextSizeClass()} leading-loose text-slate-200`}>
-            <MarkdownContent content={currentPage.contentMarkdownAr} lang={lang} />
+            <MarkdownContent
+              content={pickText(
+                lang,
+                currentPage.contentMarkdownAr,
+                currentPage.contentMarkdownEn,
+                topic.contentMarkdownEn || topic.contentMarkdownAr
+              )}
+              lang={lang}
+            />
           </article>
 
           {/* Engineering Diagram */}
@@ -276,11 +285,19 @@ export const FocusReadingModal: React.FC<FocusReadingModalProps> = ({
               </div>
 
               <p className="text-sm sm:text-base text-white font-bold leading-relaxed">
-                {currentPage.interactiveCheck.questionAr}
+                {pickText(
+                  lang,
+                  currentPage.interactiveCheck.questionAr,
+                  currentPage.interactiveCheck.questionEn
+                )}
               </p>
 
               <div className="space-y-2.5 pt-2">
-                {currentPage.interactiveCheck.optionsAr.map((option, optIdx) => {
+                {pickTextList(
+                  lang,
+                  currentPage.interactiveCheck.optionsAr,
+                  currentPage.interactiveCheck.optionsEn
+                ).map((option, optIdx) => {
                   const isSelected = selectedAnswer === optIdx;
                   const isCorrect = optIdx === currentPage.interactiveCheck?.correctIndex;
                   let btnClass = 'bg-white/[0.03] border-white/[0.08] text-slate-300 hover:bg-white/[0.06] hover:border-white/[0.15]';
@@ -330,7 +347,11 @@ export const FocusReadingModal: React.FC<FocusReadingModalProps> = ({
                     <strong className="text-amber-300">
                       {lang === 'ar' ? '💡 التفسير الهندسي: ' : '💡 Technical Explanation: '}
                     </strong>
-                    {currentPage.interactiveCheck.explanationAr}
+                    {pickText(
+                      lang,
+                      currentPage.interactiveCheck.explanationAr,
+                      currentPage.interactiveCheck.explanationEn
+                    )}
                   </div>
                 )}
               </div>
@@ -338,24 +359,24 @@ export const FocusReadingModal: React.FC<FocusReadingModalProps> = ({
           )}
 
           {/* Cisco Tip */}
-          {currentPage.ciscoTipAr && (
+          {(lang === 'ar' ? currentPage.ciscoTipAr : (currentPage.ciscoTipEn || currentPage.ciscoTipAr)) && (
             <InfoCallout
               title={lang === 'ar' ? 'نصيحة ذهبية لمهندسي سيسكو' : 'Cisco Engineering Tip'}
               icon={<Lightbulb className="w-5 h-5" />}
             >
-              {currentPage.ciscoTipAr}
+              {pickText(lang, currentPage.ciscoTipAr, currentPage.ciscoTipEn)}
             </InfoCallout>
           )}
 
           {/* Key Takeaways */}
-          {currentPage.keyTakeawaysAr && currentPage.keyTakeawaysAr.length > 0 && (
+          {pickTextList(lang, currentPage.keyTakeawaysAr, currentPage.keyTakeawaysEn).length > 0 && (
             <div className="space-y-3 pt-2">
               <h4 className="text-sm font-bold text-cyan-300 flex items-center gap-2">
                 <Award className="w-4 h-4 text-cyan-400" />
                 {lang === 'ar' ? 'أهم مخرجات التعلم للفصل' : 'Key Learning Outcomes'}
               </h4>
               <HighlightGrid
-                items={currentPage.keyTakeawaysAr.map(t => ({ text: t }))}
+                items={pickTextList(lang, currentPage.keyTakeawaysAr, currentPage.keyTakeawaysEn).map(t => ({ text: t }))}
                 columns={1}
               />
             </div>
@@ -391,7 +412,7 @@ export const FocusReadingModal: React.FC<FocusReadingModalProps> = ({
                     ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
                     : 'bg-white/[0.03] text-slate-400 hover:text-white border border-white/[0.06]'
                 }`}
-                title={page.chapterTitleAr}
+                title={pickText(lang, page.chapterTitleAr, page.chapterTitleEn)}
               >
                 <span>{page.pageNumber}</span>
                 <span className="hidden xl:inline text-[11px] font-normal truncate max-w-[90px]">

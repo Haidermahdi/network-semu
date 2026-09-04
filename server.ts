@@ -11,29 +11,37 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3003;
 
   app.use(express.json());
 
   // AI Network Tutor API Endpoint
   app.post("/api/ask-network-ai", async (req, res) => {
     try {
-      const { question, context } = req.body;
+      const { question, context, lang: reqLang } = req.body;
       if (!question) {
         return res.status(400).json({ error: "Question is required" });
       }
 
+      const replyLang = reqLang === 'en' ? 'en' : 'ar';
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
         // Graceful fallback if API key is not configured
         return res.json({
-          answer: `[إجابة تعليمية نموذجية]: في شبكات الحاسوب، السويتش (Switch) يعمل في الطبقة الثانية (Layer 2 - Data Link) ويعتمد على عناوين الماك (MAC Addresses) لتوجيه الفريمات داخل نفس الشبكة المحلية (LAN). أما الراوتر (Router) فيعمل في الطبقة الثالثة (Layer 3 - Network) ويعتمد على عناوين الـ IP لتوجيه الحزم (Packets) بين شبكات مختلفة (Inter-network). الملاحظة الجوهرية هي: عنوان الـ IP يمثل الهوية النهائية (من أين وإلى أين)، لذلك لا يتغير عبر المسار، بينما عنوان الـ MAC يمثل وسيلة النقل المحلية الحالية، لذلك يتم استبداله في كل قفزة (Hop) بين جهاز وآخر!`,
+          answer: replyLang === 'en'
+            ? `[Sample educational answer]: In computer networks, a Switch operates at Layer 2 (Data Link) and forwards frames using MAC Addresses within the same LAN. A Router operates at Layer 3 (Network) and forwards Packets between different networks using IP Addresses. Core rule: the IP address is the end-to-end identity (so it stays constant), while the MAC address is the current local hop delivery address (so it is rewritten at every router hop)!`
+            : `[إجابة تعليمية نموذجية]: في شبكات الحاسوب، السويتش (Switch) يعمل في الطبقة الثانية (Layer 2 - Data Link) ويعتمد على عناوين الماك (MAC Addresses) لتوجيه الفريمات داخل نفس الشبكة المحلية (LAN). أما الراوتر (Router) فيعمل في الطبقة الثالثة (Layer 3 - Network) ويعتمد على عناوين الـ IP لتوجيه الحزم (Packets) بين شبكات مختلفة (Inter-network). الملاحظة الجوهرية هي: عنوان الـ IP يمثل الهوية النهائية (من أين وإلى أين)، لذلك لا يتغير عبر المسار، بينما عنوان الـ MAC يمثل وسيلة النقل المحلية الحالية، لذلك يتم استبداله في كل قفزة (Hop) بين جهاز وآخر!`,
           mode: "fallback"
         });
       }
 
       const ai = new GoogleGenAI({ apiKey });
-      const systemInstruction = `أنت مهندس شبكات خبير ومحاضر مبسط متخصص في مفاهيم السويتشينغ (Switching) والراوتينغ (Routing) وحركة البيانات (Packet Flow) ونموذج OSI/TCP-IP.
+      const systemInstruction = replyLang === 'en'
+        ? `You are an expert network engineer and clear instructor specializing in Switching, Routing, Packet Flow, and the OSI/TCP-IP models.
+Explain in clear, concise English for learners, keeping standard networking terms (MAC Address, Routing Table, Default Gateway, TTL, Encapsulation, Broadcast Domain).
+Use smart real-life analogies (mail, highways, office buildings).
+Be technically accurate, concise, and organized in clear bullet points.`
+        : `أنت مهندس شبكات خبير ومحاضر مبسط متخصص في مفاهيم السويتشينغ (Switching) والراوتينغ (Routing) وحركة البيانات (Packet Flow) ونموذج OSI/TCP-IP.
 اشرح بلغة عربية سلسلة وسهلة الفهم للمتعلم، مع استخدام مصطلحات الشبكات بالإنجليزية بين قوسين (مثل: MAC Address, Routing Table, Default Gateway, TTL, Encapsulation, Broadcast Domain).
 استخدم تشبيهات ذكية من الحياة الواقعية (مثل البريد، الطرق السريعة، أبراج الشركات).
 كن دقيقاً علمياً ومختصراً ومرتباً في نقاط واضحة.`;
@@ -41,7 +49,9 @@ async function startServer() {
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: [
-          { role: "user", parts: [{ text: `${systemInstruction}\n\nالسياق التعليمي الحالي: ${context || "عام حول السويتشينغ والراوتينغ"}\n\nسؤال المستخدم: ${question}` }] }
+          { role: "user", parts: [{ text: replyLang === 'en'
+            ? `${systemInstruction}\n\nCurrent learning context: ${context || "General switching and routing"}\n\nUser question: ${question}`
+            : `${systemInstruction}\n\nالسياق التعليمي الحالي: ${context || "عام حول السويتشينغ والراوتينغ"}\n\nسؤال المستخدم: ${question}` }] }
         ]
       });
 

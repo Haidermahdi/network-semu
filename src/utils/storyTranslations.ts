@@ -502,18 +502,37 @@ export function getLocalizedStory(story: HumanNetworkStory, lang: Language): Hum
     return story;
   }
 
+  const stripArabic = (text?: string, fallback = '') => {
+    if (!text) return fallback;
+    // If text is mostly Arabic, prefer fallback
+    const arabicChars = (text.match(/[\u0600-\u06FF]/g) || []).length;
+    if (arabicChars > text.length * 0.3) return fallback || text.replace(/[\u0600-\u06FF\u0750-\u077F]+/g, '').trim() || fallback;
+    return text;
+  };
+
+  const ensureEn = (en?: string, ar?: string, fallback = '') => {
+    if (en && stripArabic(en, '') === en && en.trim()) return en;
+    return stripArabic(ar, fallback) || fallback;
+  };
+
   // Check if we have a robust pre-defined static translation
   const staticTrans = STATIC_STORIES_TRANSLATIONS[story.id];
   if (staticTrans) {
     // Merge top-level and complex child objects
     const translatedStory = {
       ...story,
-      titleEn: staticTrans.titleEn || story.titleEn,
-      subtitleEn: staticTrans.subtitleEn || story.subtitleEn,
+      titleEn: staticTrans.titleEn || story.titleEn || story.titleAr,
+      subtitleEn: staticTrans.subtitleEn || story.subtitleEn || story.subtitleAr,
       difficultyEn: staticTrans.difficultyEn || story.difficultyEn || 'Intermediate',
-      storySummaryEn: staticTrans.storySummaryEn || story.storySummaryAr,
-      realWorldScenarioDescriptionEn: staticTrans.realWorldScenarioDescriptionEn || story.realWorldScenarioDescriptionAr,
-      ciscoCoreLessonEn: staticTrans.ciscoCoreLessonEn || story.ciscoCoreLessonAr,
+      storySummaryEn: staticTrans.storySummaryEn || story.storySummaryEn || `Real-life metaphor for ${story.protocolBadge}.`,
+      realWorldScenarioDescriptionEn:
+        staticTrans.realWorldScenarioDescriptionEn ||
+        story.realWorldScenarioDescriptionEn ||
+        `This scenario models the ${story.protocolBadge} process as an everyday human story.`,
+      ciscoCoreLessonEn:
+        staticTrans.ciscoCoreLessonEn ||
+        story.ciscoCoreLessonEn ||
+        `Cisco rule: Layer 2 MAC delivery is hop-by-hop; Layer 3 IP path is end-to-end.`,
     };
 
     if (staticTrans.characters) {
@@ -522,20 +541,28 @@ export function getLocalizedStory(story: HumanNetworkStory, lang: Language): Hum
         if (transChar) {
           return {
             ...char,
-            nameEn: transChar.nameEn || char.nameEn,
-            roleEn: transChar.roleEn || char.roleAr,
-            initialSpeechEn: transChar.initialSpeechEn || char.initialSpeech,
-            carryingItemEn: transChar.carryingItemEn || char.carryingItem
+            nameEn: transChar.nameEn || ensureEn(char.nameEn, char.nameAr, char.id),
+            roleEn: transChar.roleEn || ensureEn(char.roleEn, char.roleAr, 'Network node'),
+            initialSpeechEn: transChar.initialSpeechEn || ensureEn(char.initialSpeechEn, char.initialSpeech, 'Ready for the next step.'),
+            carryingItemEn: transChar.carryingItemEn || ensureEn(char.carryingItemEn, char.carryingItem, 'Packet data'),
           };
         }
         return {
           ...char,
-          nameEn: char.nameEn,
-          roleEn: char.roleAr, // local fallback
-          initialSpeechEn: char.initialSpeech,
-          carryingItemEn: char.carryingItem
+          nameEn: ensureEn(char.nameEn, char.nameAr, char.id),
+          roleEn: ensureEn(char.roleEn, char.roleAr, 'Network node'),
+          initialSpeechEn: ensureEn(char.initialSpeechEn, char.initialSpeech, 'Ready for the next step.'),
+          carryingItemEn: ensureEn(char.carryingItemEn, char.carryingItem, 'Packet data'),
         };
       });
+    } else {
+      translatedStory.characters = story.characters.map(char => ({
+        ...char,
+        nameEn: ensureEn(char.nameEn, char.nameAr, char.id),
+        roleEn: ensureEn(char.roleEn, char.roleAr, 'Network node'),
+        initialSpeechEn: ensureEn(char.initialSpeechEn, char.initialSpeech, 'Ready for the next step.'),
+        carryingItemEn: ensureEn(char.carryingItemEn, char.carryingItem, 'Packet data'),
+      }));
     }
 
     if (staticTrans.steps) {
@@ -544,35 +571,60 @@ export function getLocalizedStory(story: HumanNetworkStory, lang: Language): Hum
         if (transStep) {
           return {
             ...step,
-            titleEn: transStep.titleEn || step.titleEn,
-            storyNarrativeEn: transStep.storyNarrativeEn || step.storyNarrativeAr,
-            technicalAnalogyEn: transStep.technicalAnalogyEn || step.technicalAnalogyAr,
-            highlightedEventEn: transStep.highlightedEventEn || step.highlightedEventAr,
-            payloadContentEn: transStep.payloadContentEn || step.payloadContentAr,
-            speechBubblesEn: transStep.speechBubblesEn || step.speechBubbles
+            titleEn: transStep.titleEn || ensureEn(step.titleEn, step.titleAr, `Step ${step.stepNumber}`),
+            storyNarrativeEn: transStep.storyNarrativeEn || ensureEn(step.storyNarrativeEn, undefined, `Traffic moves from ${step.fromCharacterId} to ${step.toCharacterId}.`),
+            technicalAnalogyEn: transStep.technicalAnalogyEn || ensureEn(step.technicalAnalogyEn, undefined, `${step.payloadType} encapsulation in progress.`),
+            highlightedEventEn: transStep.highlightedEventEn || ensureEn(step.highlightedEventEn, undefined, `Forwarding ${step.payloadType}.`),
+            payloadContentEn: transStep.payloadContentEn || ensureEn(step.payloadContentEn, undefined, step.payloadType),
+            speechBubblesEn: transStep.speechBubblesEn || Object.fromEntries(
+              Object.entries(step.speechBubbles || {}).map(([id, speech]) => [
+                id,
+                ensureEn(undefined, speech, `Active under ${story.protocolBadge}.`),
+              ])
+            ),
           };
         }
         return {
           ...step,
-          titleEn: step.titleEn || step.titleAr,
-          storyNarrativeEn: step.storyNarrativeAr,
-          technicalAnalogyEn: step.technicalAnalogyAr,
-          highlightedEventEn: step.highlightedEventAr,
-          payloadContentEn: step.payloadContentAr,
-          speechBubblesEn: step.speechBubbles
+          titleEn: ensureEn(step.titleEn, step.titleAr, `Step ${step.stepNumber}`),
+          storyNarrativeEn: ensureEn(step.storyNarrativeEn, undefined, `Traffic moves from ${step.fromCharacterId} to ${step.toCharacterId}.`),
+          technicalAnalogyEn: ensureEn(step.technicalAnalogyEn, undefined, `${step.payloadType} encapsulation in progress.`),
+          highlightedEventEn: ensureEn(step.highlightedEventEn, undefined, `Forwarding ${step.payloadType}.`),
+          payloadContentEn: ensureEn(step.payloadContentEn, undefined, step.payloadType),
+          speechBubblesEn: Object.fromEntries(
+            Object.entries(step.speechBubbles || {}).map(([id, speech]) => [
+              id,
+              ensureEn(undefined, speech, `Active under ${story.protocolBadge}.`),
+            ])
+          ),
         };
       });
+    } else {
+      translatedStory.steps = story.steps.map(step => ({
+        ...step,
+        titleEn: ensureEn(step.titleEn, step.titleAr, `Step ${step.stepNumber}`),
+        storyNarrativeEn: ensureEn(step.storyNarrativeEn, undefined, `Traffic moves from ${step.fromCharacterId} to ${step.toCharacterId}.`),
+        technicalAnalogyEn: ensureEn(step.technicalAnalogyEn, undefined, `${step.payloadType} encapsulation in progress.`),
+        highlightedEventEn: ensureEn(step.highlightedEventEn, undefined, `Forwarding ${step.payloadType}.`),
+        payloadContentEn: ensureEn(step.payloadContentEn, undefined, step.payloadType),
+        speechBubblesEn: Object.fromEntries(
+          Object.entries(step.speechBubbles || {}).map(([id, speech]) => [
+            id,
+            ensureEn(undefined, speech, `Active under ${story.protocolBadge}.`),
+          ])
+        ),
+      }));
     }
 
     return translatedStory as HumanNetworkStory;
   }
 
   // Smart algorithmic dynamic fallback for stories that are not explicitly pre-translated
-  // This strips out Arabic tags, maps common vocabulary terms, and presents clean English text
-  const cleanTitle = story.titleEn || story.titleAr
-    .replace(/برج الشركات المشترك|رحلة المظروف الدبلوماسي|النداء في سوق المدينة/g, '')
-    .replace(/[:：]/g, '')
-    .trim();
+  const cleanTitle = ensureEn(
+    story.titleEn,
+    story.titleAr,
+    `Network story: ${story.protocolBadge}`
+  );
 
   const cleanDifficulty = story.difficulty.includes('Beginner') || story.difficulty.includes('مبتدئ')
     ? 'Beginner'
@@ -585,44 +637,46 @@ export function getLocalizedStory(story: HumanNetworkStory, lang: Language): Hum
   const translatedStory = {
     ...story,
     titleEn: cleanTitle,
-    subtitleEn: story.subtitleEn || `Analogous lesson on ${story.protocolBadge}`,
+    subtitleEn: ensureEn(story.subtitleEn, undefined, `Analogous lesson on ${story.protocolBadge}`),
     difficultyEn: cleanDifficulty,
-    storySummaryEn: story.storySummaryEn || `Real-life metaphor showing how ${story.protocolBadge} works in a physical environment.`,
-    realWorldScenarioDescriptionEn: story.realWorldScenarioDescriptionEn || `This scenario models the ${story.protocolBadge} network process into an everyday human scenario.`,
-    ciscoCoreLessonEn: story.ciscoCoreLessonEn || `Cisco certification rule: Local Layer 2 MAC delivery combined with logical Layer 3 IP path routing.`,
+    storySummaryEn: ensureEn(story.storySummaryEn, undefined, `Real-life metaphor showing how ${story.protocolBadge} works in a physical environment.`),
+    realWorldScenarioDescriptionEn: ensureEn(story.realWorldScenarioDescriptionEn, undefined, `This scenario models the ${story.protocolBadge} network process into an everyday human scenario.`),
+    ciscoCoreLessonEn: ensureEn(story.ciscoCoreLessonEn, undefined, `Cisco certification rule: Local Layer 2 MAC delivery combined with logical Layer 3 IP path routing.`),
   };
 
   translatedStory.characters = story.characters.map(char => {
-    // Extract English from nameEn or parenthesized
-    const nameEn = char.nameEn || char.nameAr.replace(/[\u0600-\u06FF]+/g, '').replace(/[()]/g, '').trim() || char.id;
+    const nameEn = ensureEn(
+      char.nameEn,
+      char.nameAr,
+      char.id
+    );
     return {
       ...char,
       nameEn,
-      roleEn: char.roleEn || `Network Node representing a device at Layer ${char.ipAddress ? '3' : '2'}.`,
-      initialSpeechEn: char.initialSpeechEn || char.initialSpeech || `I am ready for the network simulation step.`,
-      carryingItemEn: char.carryingItemEn || char.carryingItem || `Packet data`
+      roleEn: ensureEn(char.roleEn, undefined, `Network node at ${char.ipAddress ? 'Layer 3' : 'Layer 2'}`),
+      initialSpeechEn: ensureEn(char.initialSpeechEn, undefined, `Ready for the ${story.protocolBadge} simulation.`),
+      carryingItemEn: ensureEn(char.carryingItemEn, undefined, 'Packet data'),
     };
   });
 
   translatedStory.steps = story.steps.map(step => {
-    const titleEn = step.titleEn || step.titleAr.replace(/[\u0600-\u06FF]+/g, '').replace(/[0-9.]/g, '').trim() || `Step ${step.stepNumber}`;
-    
-    // Convert speech bubbles
+    const titleEn = ensureEn(step.titleEn, step.titleAr, `Step ${step.stepNumber}`);
+
     const speechBubblesEn: Record<string, string> = {};
     if (step.speechBubbles) {
       for (const [charId, speech] of Object.entries(step.speechBubbles)) {
-        speechBubblesEn[charId] = speech.replace(/[\u0600-\u06FF]+/g, '').trim() || `Active communication under protocol ${story.protocolBadge}.`;
+        speechBubblesEn[charId] = ensureEn(undefined, speech, `Active communication under ${story.protocolBadge}.`);
       }
     }
 
     return {
       ...step,
       titleEn,
-      storyNarrativeEn: step.storyNarrativeEn || `Packet flows from current hop ${step.fromCharacterId} to next hop ${step.toCharacterId}.`,
-      technicalAnalogyEn: step.technicalAnalogyEn || `Encapsulated ${step.payloadType} transmission corresponding to Cisco protocol logic.`,
-      highlightedEventEn: step.highlightedEventEn || `Forwarding ${step.payloadType} frame.`,
-      payloadContentEn: step.payloadContentEn || step.payloadContentAr,
-      speechBubblesEn
+      storyNarrativeEn: ensureEn(step.storyNarrativeEn, undefined, `Packet flows from hop ${step.fromCharacterId} to ${step.toCharacterId}.`),
+      technicalAnalogyEn: ensureEn(step.technicalAnalogyEn, undefined, `Encapsulated ${step.payloadType} transmission under Cisco protocol logic.`),
+      highlightedEventEn: ensureEn(step.highlightedEventEn, undefined, `Forwarding ${step.payloadType} frame.`),
+      payloadContentEn: ensureEn(step.payloadContentEn, undefined, step.payloadType),
+      speechBubblesEn,
     };
   });
 

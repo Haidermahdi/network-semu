@@ -636,29 +636,53 @@ export const NetworkCanvas: React.FC<NetworkCanvasProps> = ({
       )}
 
       {/* Top HUD Status Bar */}
-      <div className="absolute top-3 left-4 right-4 flex flex-wrap items-center justify-between gap-2 z-20 pointer-events-none" dir={isEn ? 'ltr' : 'rtl'}>
-        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-950/90 border border-white/[0.08] text-xs shadow-xl backdrop-blur-md pointer-events-auto">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-slate-400">{isEn ? 'Scenario:' : 'السيناريو:'}</span>
-          <span className="text-amber-300 font-bold font-sans">{activeScenarioTitle || (isEn ? 'Packet Flow Simulation' : 'محاكاة تدفق الحزم')}</span>
-          {activeTopology && (
-            <span className="mr-2 px-2 py-0.5 rounded-lg bg-indigo-950/90 border border-indigo-500/40 text-indigo-300 text-[10px] font-mono hidden md:inline">
-              {isEn ? (activeTopology.badgeEn || activeTopology.titleEn) : activeTopology.badgeAr}
-            </span>
+      <div className="absolute top-3 left-4 right-4 flex flex-col gap-2 z-20 pointer-events-none" dir={isEn ? 'ltr' : 'rtl'}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-950/90 border border-white/[0.08] text-xs shadow-xl backdrop-blur-md pointer-events-auto">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-slate-400">{isEn ? 'Scenario:' : 'السيناريو:'}</span>
+            <span className="text-amber-300 font-bold font-sans">{activeScenarioTitle || (isEn ? 'Packet Flow Simulation' : 'محاكاة تدفق الحزم')}</span>
+            {activeTopology && (
+              <span className="mr-2 px-2 py-0.5 rounded-lg bg-indigo-950/90 border border-indigo-500/40 text-indigo-300 text-[10px] font-mono hidden md:inline">
+                {isEn ? (activeTopology.badgeEn || activeTopology.titleEn) : activeTopology.badgeAr}
+              </span>
+            )}
+          </div>
+
+          {activeLink && (
+            <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-950/90 border border-white/[0.08] text-xs font-mono shadow-xl backdrop-blur-md pointer-events-auto">
+              <Zap className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <span className="text-slate-400">Physical Link:</span>
+              <span className="text-cyan-300 font-bold">{activeLink.bandwidth}</span>
+              <span className="text-slate-500">({activeLink.type.toUpperCase()})</span>
+              {activeLink.status === 'blocked' && (
+                <span className="px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-600 text-[9px] font-bold">
+                  BLOCKED (STP)
+                </span>
+              )}
+            </div>
           )}
         </div>
 
-        {activeLink && (
-          <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-950/90 border border-white/[0.08] text-xs font-mono shadow-xl backdrop-blur-md pointer-events-auto">
-            <Zap className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-            <span className="text-slate-400">Physical Link:</span>
-            <span className="text-cyan-300 font-bold">{activeLink.bandwidth}</span>
-            <span className="text-slate-500">({activeLink.type.toUpperCase()})</span>
-            {activeLink.status === 'blocked' && (
-              <span className="px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-600 text-[9px] font-bold">
-                BLOCKED (STP)
+        {/* On-canvas step caption — teaches the current hop */}
+        {currentStep && (
+          <div className="max-w-xl pointer-events-auto px-3 py-2 rounded-xl bg-slate-950/95 border border-amber-500/30 shadow-xl backdrop-blur-md">
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500 text-slate-950">
+                {isEn ? `Step` : 'خطوة'} {currentStep.stepNumber || ''}
               </span>
-            )}
+              {currentStep.layer && (
+                <span className="text-[10px] font-mono text-cyan-300">{currentStep.layer}</span>
+              )}
+              <span className="text-[10px] text-slate-500 font-mono truncate">
+                {currentStep.fromNodeId} → {currentStep.toNodeId}
+              </span>
+            </div>
+            <div className="text-xs font-bold text-amber-100 leading-snug">
+              {isEn
+                ? (currentStep.stageTitleEn || currentStep.titleEn || 'Packet hop')
+                : (currentStep.stageTitleAr || currentStep.titleAr || 'انتقال الحزمة')}
+            </div>
           </div>
         )}
       </div>

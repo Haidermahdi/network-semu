@@ -1,159 +1,226 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Play, 
-  Pause, 
-  RotateCcw, 
-  SkipForward, 
-  SkipBack, 
-  Zap, 
-  Layers, 
-  Send, 
-  Settings2, 
-  Sparkles,
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  SkipForward,
+  SkipBack,
+  Zap,
+  Layers,
   Table,
-  CheckCircle2,
   Radio,
   Search,
-  Filter,
   Terminal,
   Server,
   Network,
   Cpu,
   ShieldCheck,
-  ChevronDown,
-  ChevronUp,
-  SlidersHorizontal,
-  BookmarkCheck,
   Globe,
-  Boxes,
-  Lock,
   Shield,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Activity,
+  Navigation,
+  Compass,
+  Boxes,
 } from 'lucide-react';
 import { NetworkCanvas } from './NetworkCanvas';
 import { PacketInspector } from './PacketInspector';
 import { LiveTablesModal } from './LiveTablesModal';
 import { SIMULATION_SCENARIOS, INITIAL_MAC_TABLE_SWITCH1, INITIAL_ROUTING_TABLE_ROUTER1, INITIAL_ARP_CACHE_HOST_A } from '../data/networkData';
 import { NETWORK_TOPOLOGIES, getTopologyForScenario } from '../data/networkTopologies';
-import { NetworkNode, MacTableEntry, RoutingTableEntry, ArpTableEntry, Language } from '../types';
+import { NetworkNode, MacTableEntry, RoutingTableEntry, ArpTableEntry, Language, CurriculumTrack } from '../types';
 
 interface InteractiveLabProps {
   initialScenarioId?: string;
   onOpenLiveTables?: () => void;
   lang?: Language;
+  userTrack?: CurriculumTrack;
 }
 
-export const InteractiveLab: React.FC<InteractiveLabProps> = ({ initialScenarioId, lang = 'ar' }) => {
+const TRACK_LABEL: Record<CurriculumTrack, { ar: string; en: string; exam: string }> = {
+  ccna: { ar: 'CCNA', en: 'CCNA', exam: '200-301' },
+  ccnp: { ar: 'CCNP', en: 'CCNP', exam: 'ENCOR/ENARSI' },
+  ccie: { ar: 'CCIE', en: 'CCIE', exam: 'EI' },
+};
+
+/** Primary exam track for each lab scenario */
+const SCENARIO_TRACK: Record<string, CurriculumTrack> = {
+  'same-lan-switching': 'ccna',
+  'arp-broadcast-resolution': 'ccna',
+  'default-gateway-ping': 'ccna',
+  'inter-vlan-routing': 'ccna',
+  'stp-loop-prevention': 'ccna',
+  'lacp-etherchannel-bundle': 'ccna',
+  'ipv6-slaac-ndp-discovery': 'ccna',
+  'cross-network-journey': 'ccna',
+  'hsrp-gateway-failover': 'ccnp',
+  'eigrp-dual-convergence': 'ccnp',
+  'rstp-fast-convergence': 'ccnp',
+  'enterprise-nat-pat': 'ccnp',
+  'wan-failover-redundancy': 'ccnp',
+  'bgp-ebgp-peering': 'ccie',
+  'ipsec-vpn-tunnel': 'ccie',
+  'mpls-l3vpn-label-switch': 'ccie',
+};
+
+const CATEGORIES = [
+  { id: 'all', labelAr: 'الكل', labelEn: 'All', icon: Compass },
+  { id: 'switching', labelAr: 'L2', labelEn: 'L2', icon: Activity },
+  { id: 'routing', labelAr: 'L3', labelEn: 'L3', icon: Navigation },
+  { id: 'services_security', labelAr: 'أمن/خدمات', labelEn: 'Sec/Svc', icon: Shield },
+] as const;
+
+type CategoryId = (typeof CATEGORIES)[number]['id'];
+type DifficultyFilter = 'all' | 'simple' | 'intermediate' | 'complex' | 'advanced';
+
+const getScenarioTrack = (id: string): CurriculumTrack => SCENARIO_TRACK[id] || 'ccna';
+
+const getScenarioCategory = (scId: string): Exclude<CategoryId, 'all'> => {
+  if (['same-lan-switching', 'arp-broadcast-resolution', 'inter-vlan-routing', 'stp-loop-prevention', 'rstp-fast-convergence', 'lacp-etherchannel-bundle'].includes(scId)) {
+    return 'switching';
+  }
+  if (['cross-network-journey', 'default-gateway-ping', 'wan-failover-redundancy', 'eigrp-dual-convergence', 'bgp-ebgp-peering'].includes(scId)) {
+    return 'routing';
+  }
+  return 'services_security';
+};
+
+const matchesDifficulty = (diff: string | undefined, filter: DifficultyFilter) => {
+  if (filter === 'all') return true;
+  if (filter === 'simple') return diff === 'simple';
+  if (filter === 'intermediate') return diff === 'intermediate' || diff === 'complex';
+  if (filter === 'complex') return diff === 'complex';
+  if (filter === 'advanced') return diff === 'very_complex' || diff === 'expert';
+  return true;
+};
+
+const difficultyLabel = (diff: string | undefined, isEn: boolean) => {
+  switch (diff) {
+    case 'simple':
+      return isEn ? 'Beginner' : 'مبتدئ';
+    case 'intermediate':
+      return isEn ? 'Intermediate' : 'متوسط';
+    case 'complex':
+      return isEn ? 'Complex' : 'متوسط+';
+    case 'very_complex':
+      return isEn ? 'Advanced' : 'متقدم';
+    case 'expert':
+      return isEn ? 'Expert' : 'خبير';
+    default:
+      return isEn ? 'Lab' : 'معمل';
+  }
+};
+
+const difficultyBadgeClass = (diff: string | undefined) => {
+  if (diff === 'simple') return 'text-emerald-300';
+  if (diff === 'intermediate' || diff === 'complex') return 'text-amber-300';
+  return 'text-rose-300';
+};
+
+export const InteractiveLab: React.FC<InteractiveLabProps> = ({
+  initialScenarioId,
+  lang = 'ar',
+  userTrack = 'ccna',
+}) => {
   const isEn = lang === 'en';
-  const [selectedScenarioId, setSelectedScenarioId] = useState(initialScenarioId || 'cross-network-journey');
+  const trackInfo = TRACK_LABEL[userTrack];
+
+  const trackScenarios = useMemo(
+    () => SIMULATION_SCENARIOS.filter(s => getScenarioTrack(s.id) === userTrack),
+    [userTrack]
+  );
+
+  const [selectedScenarioId, setSelectedScenarioId] = useState(() => {
+    const preferred = initialScenarioId || 'cross-network-journey';
+    if (trackScenarios.some(s => s.id === preferred)) return preferred;
+    return trackScenarios[0]?.id || preferred;
+  });
   const [selectedTopologyId, setSelectedTopologyId] = useState<string>(() => {
     return getTopologyForScenario(initialScenarioId || 'cross-network-journey').id;
   });
-  const [isAutoSyncTopology, setIsAutoSyncTopology] = useState<boolean>(true);
-  const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'simple' | 'complex' | 'very_complex'>('all');
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'switching' | 'routing' | 'services_security'>('all');
+  const [isAutoSyncTopology, setIsAutoSyncTopology] = useState(true);
+  const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState<CategoryId>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1); // 1 = normal, 2 = fast, 0.5 = slow
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [selectedNode, setSelectedNode] = useState<NetworkNode | null>(null);
   const [isTablesModalOpen, setIsTablesModalOpen] = useState(false);
-  const [isSelectorExpanded, setIsSelectorExpanded] = useState(true);
 
-  // Derive active topology
-  const activeTopology = useMemo(() => {
-    return NETWORK_TOPOLOGIES.find(t => t.id === selectedTopologyId) || NETWORK_TOPOLOGIES[0];
-  }, [selectedTopologyId]);
-
-  // Sync if initialScenarioId changes from outside
-  useEffect(() => {
-    if (initialScenarioId && initialScenarioId !== selectedScenarioId) {
-      setSelectedScenarioId(initialScenarioId);
-      setCurrentStepIndex(0);
-      setIsPlaying(false);
-      if (isAutoSyncTopology) {
-        setSelectedTopologyId(getTopologyForScenario(initialScenarioId).id);
-      }
-    }
-  }, [initialScenarioId, isAutoSyncTopology]);
-
-  // Dynamic tables state
   const [macTable, setMacTable] = useState<MacTableEntry[]>(INITIAL_MAC_TABLE_SWITCH1);
   const [routingTable, setRoutingTable] = useState<RoutingTableEntry[]>(INITIAL_ROUTING_TABLE_ROUTER1);
   const [arpCache, setArpCache] = useState<ArpTableEntry[]>(INITIAL_ARP_CACHE_HOST_A);
 
-  const activeScenario = SIMULATION_SCENARIOS.find(s => s.id === selectedScenarioId) || SIMULATION_SCENARIOS[0];
+  // Reset selection when track changes
+  useEffect(() => {
+    if (!trackScenarios.some(s => s.id === selectedScenarioId)) {
+      const next = trackScenarios[0]?.id;
+      if (next) {
+        setSelectedScenarioId(next);
+        setCurrentStepIndex(0);
+        setIsPlaying(false);
+        if (isAutoSyncTopology) {
+          setSelectedTopologyId(getTopologyForScenario(next).id);
+        }
+      }
+    }
+  }, [userTrack, trackScenarios]);
+
+  useEffect(() => {
+    if (initialScenarioId && initialScenarioId !== selectedScenarioId) {
+      if (trackScenarios.some(s => s.id === initialScenarioId) || getScenarioTrack(initialScenarioId) === userTrack) {
+        setSelectedScenarioId(initialScenarioId);
+        setCurrentStepIndex(0);
+        setIsPlaying(false);
+        if (isAutoSyncTopology) {
+          setSelectedTopologyId(getTopologyForScenario(initialScenarioId).id);
+        }
+      }
+    }
+  }, [initialScenarioId, isAutoSyncTopology]);
+
+  const activeTopology = useMemo(
+    () => NETWORK_TOPOLOGIES.find(t => t.id === selectedTopologyId) || NETWORK_TOPOLOGIES[0],
+    [selectedTopologyId]
+  );
+
+  const activeScenario = SIMULATION_SCENARIOS.find(s => s.id === selectedScenarioId) || trackScenarios[0] || SIMULATION_SCENARIOS[0];
   const currentStep = activeScenario.steps[currentStepIndex];
 
-  // Categorize scenarios
-  const getScenarioCategory = (scId: string) => {
-    if (['same-lan-switching', 'arp-broadcast-resolution', 'inter-vlan-routing', 'stp-loop-prevention', 'rstp-fast-convergence', 'lacp-etherchannel-bundle'].includes(scId)) {
-      return 'switching';
-    }
-    if (['cross-network-journey', 'default-gateway-ping', 'wan-failover-redundancy', 'eigrp-dual-convergence', 'bgp-ebgp-peering'].includes(scId)) {
-      return 'routing';
-    }
-    return 'services_security';
-  };
-
-  // Dynamic Counts
-  const counts = useMemo(() => {
-    return {
-      all: SIMULATION_SCENARIOS.length,
-      simple: SIMULATION_SCENARIOS.filter(s => s.difficulty === 'simple').length,
-      complex: SIMULATION_SCENARIOS.filter(s => s.difficulty === 'complex').length,
-      very_complex: SIMULATION_SCENARIOS.filter(s => s.difficulty === 'very_complex').length,
-      switching: SIMULATION_SCENARIOS.filter(s => getScenarioCategory(s.id) === 'switching').length,
-      routing: SIMULATION_SCENARIOS.filter(s => getScenarioCategory(s.id) === 'routing').length,
-      services_security: SIMULATION_SCENARIOS.filter(s => getScenarioCategory(s.id) === 'services_security').length,
-    };
-  }, []);
-
-  // Filtered scenarios
   const filteredScenarios = useMemo(() => {
-    return SIMULATION_SCENARIOS.filter(sc => {
-      // Difficulty match
-      if (difficultyFilter !== 'all' && sc.difficulty !== difficultyFilter) {
-        return false;
-      }
-      // Category match
-      if (categoryFilter !== 'all' && getScenarioCategory(sc.id) !== categoryFilter) {
-        return false;
-      }
-      // Search match
+    return trackScenarios.filter(sc => {
+      if (!matchesDifficulty(sc.difficulty, difficultyFilter)) return false;
+      if (categoryFilter !== 'all' && getScenarioCategory(sc.id) !== categoryFilter) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchesTitleAr = sc.titleAr.toLowerCase().includes(q);
-        const matchesTitleEn = (sc.titleEn || '').toLowerCase().includes(q);
-        const matchesPacket = (sc.packetType || '').toLowerCase().includes(q);
-        const matchesId = sc.id.toLowerCase().includes(q);
-        if (!matchesTitleAr && !matchesTitleEn && !matchesPacket && !matchesId) {
-          return false;
-        }
+        const ok =
+          sc.titleAr.toLowerCase().includes(q) ||
+          (sc.titleEn || '').toLowerCase().includes(q) ||
+          (sc.packetType || '').toLowerCase().includes(q) ||
+          sc.id.toLowerCase().includes(q);
+        if (!ok) return false;
       }
       return true;
     });
-  }, [difficultyFilter, categoryFilter, searchQuery]);
+  }, [trackScenarios, difficultyFilter, categoryFilter, searchQuery]);
 
-  // Auto-play timer
   useEffect(() => {
-    let interval: any = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (isPlaying) {
       interval = setInterval(() => {
         setCurrentStepIndex(prev => {
-          if (prev < activeScenario.steps.length - 1) {
-            return prev + 1;
-          } else {
-            setIsPlaying(false);
-            return prev;
-          }
+          if (prev < activeScenario.steps.length - 1) return prev + 1;
+          setIsPlaying(false);
+          return prev;
         });
       }, 3500 / playbackSpeed);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [isPlaying, activeScenario, playbackSpeed]);
 
-  // Update dynamic tables when step updates
   useEffect(() => {
     if (currentStep?.tableUpdate) {
       const { tableName, entry } = currentStep.tableUpdate;
@@ -182,33 +249,28 @@ export const InteractiveLab: React.FC<InteractiveLabProps> = ({ initialScenarioI
     setCurrentStepIndex(0);
     setIsPlaying(false);
     if (isAutoSyncTopology) {
-      const topo = getTopologyForScenario(id);
-      setSelectedTopologyId(topo.id);
+      setSelectedTopologyId(getTopologyForScenario(id).id);
     }
   };
 
   const handleTopologyChange = (topoId: string) => {
     setSelectedTopologyId(topoId);
     const targetTopo = NETWORK_TOPOLOGIES.find(t => t.id === topoId);
-    if (targetTopo) {
-      if (!targetTopo.supportedScenarioIds.includes(selectedScenarioId)) {
-        setSelectedScenarioId(targetTopo.defaultScenarioId);
-        setCurrentStepIndex(0);
-        setIsPlaying(false);
-      }
+    if (targetTopo && !targetTopo.supportedScenarioIds.includes(selectedScenarioId)) {
+      const inTrack = targetTopo.supportedScenarioIds.find(id => getScenarioTrack(id) === userTrack);
+      const next = inTrack || targetTopo.defaultScenarioId;
+      setSelectedScenarioId(next);
+      setCurrentStepIndex(0);
+      setIsPlaying(false);
     }
   };
 
   const handleStepForward = () => {
-    if (currentStepIndex < activeScenario.steps.length - 1) {
-      setCurrentStepIndex(prev => prev + 1);
-    }
+    if (currentStepIndex < activeScenario.steps.length - 1) setCurrentStepIndex(prev => prev + 1);
   };
 
   const handleStepBackward = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex(prev => prev - 1);
-    }
+    if (currentStepIndex > 0) setCurrentStepIndex(prev => prev - 1);
   };
 
   const handleReset = () => {
@@ -216,7 +278,6 @@ export const InteractiveLab: React.FC<InteractiveLabProps> = ({ initialScenarioI
     setIsPlaying(false);
   };
 
-  // Generate dynamic Cisco CLI command for the current step
   const getCiscoCliSnippet = () => {
     if (!currentStep) return null;
     const nodeId = currentStep.activeNodeId;
@@ -235,484 +296,452 @@ export const InteractiveLab: React.FC<InteractiveLabProps> = ({ initialScenarioI
     return `Host-A> ping ${currentStep.headers.l3.destIp}\nPinging ${currentStep.headers.l3.destIp} with 32 bytes of data:\nReply from ${currentStep.headers.l3.destIp}: bytes=32 time=12ms TTL=${currentStep.headers.l3.ttl}\nHost-A> arp -a\n  Internet Address      Physical Address      Type\n  192.168.1.1           ${currentStep.headers.l2.destMac}     dynamic`;
   };
 
+  const topologyIcons: Record<string, React.ReactNode> = {
+    Globe: <Globe className="w-3.5 h-3.5" />,
+    Network: <Network className="w-3.5 h-3.5" />,
+    ShieldCheck: <ShieldCheck className="w-3.5 h-3.5" />,
+    Layers: <Layers className="w-3.5 h-3.5" />,
+    Shield: <Shield className="w-3.5 h-3.5" />,
+    Cpu: <Cpu className="w-3.5 h-3.5" />,
+    Zap: <Zap className="w-3.5 h-3.5" />,
+    Server: <Server className="w-3.5 h-3.5" />,
+    Radio: <Radio className="w-3.5 h-3.5" />,
+  };
+
+  const trackTopologies = useMemo(() => {
+    return NETWORK_TOPOLOGIES.filter(t =>
+      t.supportedScenarioIds.some(id => getScenarioTrack(id) === userTrack)
+    );
+  }, [userTrack]);
+
   return (
     <div className={`space-y-4 font-sans ${isEn ? 'text-left dir-ltr' : 'text-right dir-rtl'}`}>
-      {/* Scenario Control Hub Card */}
-      <div className="bg-slate-900/95 rounded-2xl border border-slate-800 p-4 shadow-xl space-y-3.5">
-        {/* Top Header & Quick Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-              <Zap className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-bold text-slate-100">
-                  {isEn ? 'Interactive Packet Lab' : 'معمل المحاكاة الشبكي الحي (Interactive Packet Lab)'}
-                </h2>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800">
-                  {isEn ? `${counts.all} Enterprise Scenarios` : `${counts.all} سيناريوهات معتمدة`}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 hidden sm:block">
-                {isEn 
-                  ? 'Select any scenario to inspect frame (L2) and packet (L3) dynamics and real-time CAM / Routing table convergence'
-                  : 'اختر أي سيناريو لمشاهدة حركة الإطارات (L2) والحزم (L3) وتفاعل جداول الـ CAM والـ Routing لحظياً'}
-              </p>
-            </div>
+      {/* Compact page header — same pattern as Real-Life Stories */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-0.5">
+        <div className="min-w-0 space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+            <h2 className="text-base sm:text-lg font-black text-white">
+              {isEn ? 'Live Packet Lab' : 'المعمل الحي'}
+            </h2>
+            <span className="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/25 text-[10px] font-bold">
+              {trackInfo.en} · {trackScenarios.length} {isEn ? 'labs' : 'معامل'}
+            </span>
           </div>
-
-          <div className="flex items-center gap-2">
-            {/* Live Tables Modal Trigger */}
-            <button
-              onClick={() => setIsTablesModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-md"
-            >
-              <Table className="w-3.5 h-3.5" />
-              <span>{isEn ? 'Live Memory Tables (CAM / Route / ARP)' : 'جداول الذاكرة الحية (CAM / Route / ARP)'}</span>
-            </button>
-
-            {/* Toggle Expand/Collapse Selector */}
-            <button
-              onClick={() => setIsSelectorExpanded(!isSelectorExpanded)}
-              className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
-              title={isSelectorExpanded ? (isEn ? 'Collapse scenarios' : 'طي قائمة السيناريوهات') : (isEn ? 'Expand scenarios' : 'توسيع قائمة السيناريوهات')}
-            >
-              {isSelectorExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-          </div>
+          <p className="text-[11px] text-slate-500">
+            {isEn
+              ? `Only ${trackInfo.en} (${trackInfo.exam}) packet labs for your learning track.`
+              : `معامل مسار ${trackInfo.ar} فقط (${trackInfo.exam}) حسب مستواك الدراسي.`}
+          </p>
         </div>
 
-        {/* Filter Controls Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5">
-          {/* Search Box */}
-          <div className="relative flex-1 min-w-[220px] max-w-md">
-            <Search className={`absolute ${isEn ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none`} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={isEn ? 'Search by name or protocol (ARP, OSPF, BGP, STP, VLAN, NAT...)' : 'ابحث بالاسم أو البروتوكول (ARP, OSPF, BGP, STP, VLAN, NAT...)'}
-              className={`w-full ${isEn ? 'pl-9 pr-3' : 'pl-3 pr-9'} py-1.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 text-xs text-slate-100 placeholder-slate-500 outline-none transition-all`}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className={`absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs`}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          {/* Category Tabs */}
-          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto max-w-full">
-            <button
-              onClick={() => setCategoryFilter('all')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                categoryFilter === 'all'
-                  ? 'bg-slate-800 text-slate-100 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {isEn ? `All (${counts.all})` : `الكل (${counts.all})`}
-            </button>
-            <button
-              onClick={() => setCategoryFilter('switching')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                categoryFilter === 'switching'
-                  ? 'bg-emerald-900/70 text-emerald-200 border border-emerald-600/40 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {isEn ? `Switching & LAN (${counts.switching})` : `التبديل والـ LAN (${counts.switching})`}
-            </button>
-            <button
-              onClick={() => setCategoryFilter('routing')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                categoryFilter === 'routing'
-                  ? 'bg-indigo-900/70 text-indigo-200 border border-indigo-600/40 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {isEn ? `Routing & WAN (${counts.routing})` : `التوجيه والـ WAN (${counts.routing})`}
-            </button>
-            <button
-              onClick={() => setCategoryFilter('services_security')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                categoryFilter === 'services_security'
-                  ? 'bg-purple-900/70 text-purple-200 border border-purple-600/40 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {isEn ? `Security & Services (${counts.services_security})` : `الأمان والخدمات CCIE (${counts.services_security})`}
-            </button>
-          </div>
-
-          {/* Difficulty Filter Pills */}
-          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
-            <button
-              onClick={() => setDifficultyFilter('all')}
-              className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition-colors ${
-                difficultyFilter === 'all'
-                  ? 'bg-slate-700 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {isEn ? 'All' : 'الكل'}
-            </button>
-            <button
-              onClick={() => setDifficultyFilter('simple')}
-              className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition-colors ${
-                difficultyFilter === 'simple'
-                  ? 'bg-emerald-600 text-white'
-                  : 'text-emerald-400 hover:text-emerald-300'
-              }`}
-            >
-              {isEn ? `Fundamental (${counts.simple})` : `بسيط (${counts.simple})`}
-            </button>
-            <button
-              onClick={() => setDifficultyFilter('complex')}
-              className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition-colors ${
-                difficultyFilter === 'complex'
-                  ? 'bg-amber-600 text-white'
-                  : 'text-amber-400 hover:text-amber-300'
-              }`}
-            >
-              {isEn ? `Intermediate (${counts.complex})` : `متوسط (${counts.complex})`}
-            </button>
-            <button
-              onClick={() => setDifficultyFilter('very_complex')}
-              className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition-colors ${
-                difficultyFilter === 'very_complex'
-                  ? 'bg-rose-600 text-white'
-                  : 'text-rose-400 hover:text-rose-300'
-              }`}
-            >
-              {isEn ? `CCIE Advanced (${counts.very_complex})` : `متقدم CCIE (${counts.very_complex})`}
-            </button>
-          </div>
-        </div>
-
-        {/* Scenario Cards Grid (Collapsible) */}
-        {isSelectorExpanded && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 max-h-[340px] overflow-y-auto pr-1">
-            {filteredScenarios.length === 0 ? (
-              <div className="col-span-full py-6 text-center text-xs text-slate-400 bg-slate-950/60 rounded-xl border border-slate-800">
-                {isEn ? 'No scenarios found matching your search query or selected filter.' : 'لم يتم العثور على أي سيناريو يطابق كلمة البحث أو التصنيف المحدد.'}
-              </div>
-            ) : (
-              filteredScenarios.map(sc => {
-                const isSelected = selectedScenarioId === sc.id;
-                const diffBadgeClass = 
-                  sc.difficulty === 'simple'
-                    ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800'
-                    : sc.difficulty === 'complex'
-                    ? 'bg-amber-950/80 text-amber-400 border-amber-800'
-                    : 'bg-rose-950/80 text-rose-400 border-rose-800';
-
-                return (
-                  <button
-                    key={sc.id}
-                    onClick={() => handleScenarioChange(sc.id)}
-                    className={`p-3 rounded-xl ${isEn ? 'text-left' : 'text-right'} transition-all border flex flex-col justify-between gap-2 relative ${
-                      isSelected
-                        ? 'bg-indigo-950/90 border-indigo-400 ring-2 ring-indigo-500/40 shadow-lg shadow-indigo-950/50'
-                        : 'bg-slate-950/70 border-slate-800 hover:border-slate-700 hover:bg-slate-900/80 text-slate-300'
-                    }`}
-                  >
-                    {isSelected && (
-                      <div className={`absolute top-2 ${isEn ? 'right-2' : 'left-2'} w-2 h-2 rounded-full bg-amber-400 animate-pulse`} />
-                    )}
-
-                    {/* Top Row: Full Title & Difficulty */}
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-bold text-xs leading-snug text-slate-100 flex-1">
-                        {isEn && sc.titleEn ? sc.titleEn : sc.titleAr}
-                      </h3>
-                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 border ${diffBadgeClass}`}>
-                        {sc.difficulty === 'simple' ? (isEn ? 'Fundamental' : 'بسيط') : sc.difficulty === 'complex' ? (isEn ? 'Intermediate' : 'متوسط') : (isEn ? 'CCIE' : 'CCIE متقدم')}
-                      </span>
-                    </div>
-
-                    {/* Bottom Row: Protocol & Step Count */}
-                    <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800/80">
-                      <span className="font-mono text-cyan-400 font-bold bg-cyan-950/60 px-2 py-0.5 rounded-md border border-cyan-800/60 text-[10px]">
-                        {sc.packetType || 'Data'}
-                      </span>
-                      <span className="text-slate-400 text-[10px]">
-                        {isEn ? `${sc.steps.length} steps` : `${sc.steps.length} خطوات تفاعلية`}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
-        )}
+        <button
+          onClick={() => setIsTablesModalOpen(true)}
+          className="px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/25 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+        >
+          <Table className="w-3.5 h-3.5" />
+          <span>{isEn ? 'Live Tables' : 'جداول الذاكرة'}</span>
+        </button>
       </div>
 
-      {/* Topology Model Selection & Network Blueprint Hub */}
-      <div className="bg-slate-900/95 rounded-2xl border border-slate-800 p-3.5 shadow-xl space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-              <Boxes className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm font-bold text-slate-100 font-sans">
-                  {isEn ? 'Simulator Topology Models (Physical & Logical Layouts)' : 'مخططات وطوبولوجيا المحاكي (Simulator Topology Models)'}
-                </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                  {isEn ? `${NETWORK_TOPOLOGIES.length} Topologies` : `${NETWORK_TOPOLOGIES.length} مخططات هندسية مخصصة`}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">
-                {isEn 
-                  ? 'Each scenario runs on a dedicated topology matching its physical and logical architecture'
-                  : 'كل سيناريو يعمل على مخطط شبكي مستقل ومناسب لاحتمالاته الفيزيائية والمنطقية'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsAutoSyncTopology(!isAutoSyncTopology)}
-              className={`px-2.5 py-1 rounded-xl text-[11px] font-mono border flex items-center gap-1.5 transition-all ${
-                isAutoSyncTopology
-                  ? 'bg-cyan-950/80 text-cyan-300 border-cyan-500/40 shadow-sm'
-                  : 'bg-slate-800 text-slate-400 border-slate-700'
-              }`}
-              title={isEn ? 'Auto-sync topology with active scenario' : 'مزامنة المخطط تلقائياً مع السيناريو المختار'}
-            >
-              <ArrowRightLeft className="w-3 h-3" />
-              <span>{isEn ? `Scenario Sync: ${isAutoSyncTopology ? 'Automatic' : 'Manual'}` : `المزامنة مع السيناريو: ${isAutoSyncTopology ? 'مفعلة تلقائياً' : 'يدوية'}`}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Horizontal Topology Model Selector Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-slate-700">
-          {NETWORK_TOPOLOGIES.map((topo) => {
-            const isSelected = activeTopology.id === topo.id;
-            return (
-              <button
-                key={topo.id}
-                onClick={() => handleTopologyChange(topo.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl ${isEn ? 'text-left' : 'text-right'} transition-all whitespace-nowrap border shrink-0 ${
-                  isSelected
-                    ? 'bg-gradient-to-r from-indigo-950/90 to-slate-900 border-amber-400 text-white shadow-lg shadow-indigo-950/60 ring-1 ring-amber-400/40'
-                    : 'bg-slate-950/80 border-slate-800/90 hover:border-slate-700 text-slate-300 hover:text-white'
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+        {/* Sidebar: search + filters + scenario list */}
+        <aside className="lg:col-span-4 xl:col-span-3">
+          <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-3">
+            <div className="relative">
+              <Search className={`w-3.5 h-3.5 absolute top-1/2 -translate-y-1/2 text-slate-500 ${isEn ? 'left-3' : 'right-3'}`} />
+              <input
+                type="text"
+                placeholder={isEn ? 'Search in track...' : 'بحث ضمن المسار...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`w-full py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-amber-500/40 ${
+                  isEn ? 'pl-9 pr-3 text-left' : 'pr-9 pl-3 text-right'
                 }`}
-              >
-                <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
-                  isSelected ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-400'
-                }`}>
-                  {topo.iconName === 'Globe' && <Globe className="w-3.5 h-3.5" />}
-                  {topo.iconName === 'Network' && <Network className="w-3.5 h-3.5" />}
-                  {topo.iconName === 'ShieldCheck' && <ShieldCheck className="w-3.5 h-3.5" />}
-                  {topo.iconName === 'Layers' && <Layers className="w-3.5 h-3.5" />}
-                  {topo.iconName === 'Shield' && <Shield className="w-3.5 h-3.5" />}
-                  {topo.iconName === 'Cpu' && <Cpu className="w-3.5 h-3.5" />}
-                  {topo.iconName === 'Zap' && <Zap className="w-3.5 h-3.5" />}
-                  {topo.iconName === 'Server' && <Server className="w-3.5 h-3.5" />}
-                  {topo.iconName === 'Radio' && <Radio className="w-3.5 h-3.5" />}
-                </div>
+              />
+            </div>
 
-                <div className={`flex flex-col ${isEn ? 'text-left' : 'text-right'}`}>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold leading-tight">
-                      {isEn && topo.titleEn ? topo.titleEn.split('(')[0] : topo.titleAr.split('(')[0]}
-                    </span>
-                    {isSelected && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                    )}
-                  </div>
-                  <span className="text-[9.5px] font-mono text-slate-400">
-                    {isEn ? `${topo.nodes.length} Nodes | ${topo.links.length} Links` : `${topo.nodes.length} أجهزة | ${topo.links.length} وصلات`}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Active Topology Blueprint Overview Strip */}
-        <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-wrap items-center justify-between gap-2.5 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800/80">
-              {isEn && activeTopology.badgeEn ? activeTopology.badgeEn : activeTopology.badgeAr}
-            </span>
-            <span className="font-bold text-slate-200">
-              {isEn && activeTopology.titleEn ? activeTopology.titleEn : activeTopology.titleAr}
-            </span>
-            <span className="text-slate-400 text-[11px] hidden lg:inline">
-              — {isEn && activeTopology.descriptionEn ? activeTopology.descriptionEn : activeTopology.descriptionAr}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-400 text-[11px]">{isEn ? 'Scenarios for this topology:' : 'السيناريوهات التابعة لهذا المخطط:'}</span>
-            <div className="flex items-center gap-1 flex-wrap">
-              {activeTopology.supportedScenarioIds.map(scId => {
-                const sc = SIMULATION_SCENARIOS.find(s => s.id === scId);
-                const isActiveSc = selectedScenarioId === scId;
+            <div className="flex flex-wrap gap-1">
+              {CATEGORIES.map(cat => {
+                const Icon = cat.icon;
+                const count =
+                  cat.id === 'all'
+                    ? trackScenarios.length
+                    : trackScenarios.filter(s => getScenarioCategory(s.id) === cat.id).length;
+                if (cat.id !== 'all' && count === 0) return null;
+                const active = categoryFilter === cat.id;
                 return (
                   <button
-                    key={scId}
-                    onClick={() => handleScenarioChange(scId)}
-                    className={`px-2 py-0.5 rounded-lg text-[10px] font-mono border transition-all ${
-                      isActiveSc
-                        ? 'bg-amber-400 text-slate-950 font-bold border-amber-300 shadow-sm'
-                        : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-600'
+                    key={cat.id}
+                    onClick={() => setCategoryFilter(cat.id)}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 border transition-all cursor-pointer ${
+                      active
+                        ? 'bg-amber-500 text-black border-amber-400'
+                        : 'bg-white/[0.03] text-slate-400 border-white/[0.06] hover:text-slate-200'
                     }`}
                   >
-                    {sc ? sc.packetType || (isEn && sc.titleEn ? sc.titleEn.slice(0, 14) : sc.titleAr.slice(0, 14)) : scId}
+                    <Icon className="w-3 h-3" />
+                    <span>{isEn ? cat.labelEn : cat.labelAr}</span>
+                    <span className="opacity-70">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-wrap gap-1">
+              {([
+                { id: 'all', ar: 'الكل', en: 'All' },
+                { id: 'simple', ar: 'مبتدئ', en: 'Beginner' },
+                { id: 'intermediate', ar: 'متوسط', en: 'Mid' },
+                { id: 'advanced', ar: 'متقدم', en: 'Advanced' },
+              ] as const).map(d => {
+                const active = difficultyFilter === d.id;
+                return (
+                  <button
+                    key={d.id}
+                    onClick={() => setDifficultyFilter(d.id)}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${
+                      active
+                        ? 'bg-slate-700 text-white border-slate-500'
+                        : 'bg-white/[0.02] text-slate-500 border-white/[0.06] hover:text-slate-300'
+                    }`}
+                  >
+                    {isEn ? d.en : d.ar}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="space-y-1 max-h-[62vh] overflow-y-auto sidebar-scroll">
+              {filteredScenarios.length === 0 ? (
+                <div className="p-4 text-center text-xs text-slate-500">
+                  {isEn ? 'No matches in this track' : 'لا نتائج في هذا المسار'}
+                  <button
+                    onClick={() => {
+                      setCategoryFilter('all');
+                      setDifficultyFilter('all');
+                      setSearchQuery('');
+                    }}
+                    className="block mx-auto mt-2 text-amber-400 hover:underline cursor-pointer"
+                  >
+                    {isEn ? 'Reset' : 'إعادة الضبط'}
+                  </button>
+                </div>
+              ) : (
+                filteredScenarios.map(sc => {
+                  const isSelected = selectedScenarioId === sc.id;
+                  return (
+                    <button
+                      key={sc.id}
+                      onClick={() => handleScenarioChange(sc.id)}
+                      className={`w-full p-2.5 rounded-xl border text-xs transition-all cursor-pointer ${
+                        isEn ? 'text-left' : 'text-right'
+                      } ${
+                        isSelected
+                          ? 'bg-amber-500/15 border-amber-500/40 text-amber-100'
+                          : 'bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className={`text-[10px] font-bold ${difficultyBadgeClass(sc.difficulty)}`}>
+                          {difficultyLabel(sc.difficulty, isEn)}
+                        </span>
+                        <span className="font-mono text-[10px] text-cyan-400/90 truncate max-w-[55%]">
+                          {sc.packetType || 'Data'}
+                        </span>
+                      </div>
+                      <div className="font-bold text-slate-100 leading-snug line-clamp-2">
+                        {isEn && sc.titleEn ? sc.titleEn : sc.titleAr}
+                      </div>
+                      <div className="mt-1 text-[10px] text-slate-500">
+                        {isEn ? `${sc.steps.length} steps` : `${sc.steps.length} خطوات`}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </aside>
+
+        {/* Player column — topology-first packet workspace */}
+        <div className="lg:col-span-8 xl:col-span-9 space-y-3 min-w-0">
+          {/* Scenario briefing */}
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3.5 space-y-2">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-black text-white">
+                    {isEn && activeScenario.titleEn ? activeScenario.titleEn : activeScenario.titleAr}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-300 border border-cyan-500/25 text-[10px] font-mono font-bold">
+                    {activeScenario.packetType || 'PDU'}
+                  </span>
+                  <span className={`text-[10px] font-bold ${difficultyBadgeClass(activeScenario.difficulty)}`}>
+                    {difficultyLabel(activeScenario.difficulty, isEn)}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  {isEn
+                    ? (activeScenario as { descriptionEn?: string }).descriptionEn || activeScenario.descriptionAr
+                    : activeScenario.descriptionAr}
+                </p>
+                {activeScenario.realWorldAnalogyAr && (
+                  <p className="text-[11px] text-amber-200/70 leading-relaxed border-t border-white/[0.04] pt-2">
+                    <span className="font-bold text-amber-400/90">{isEn ? 'Why it matters: ' : 'لماذا يهم: '}</span>
+                    {activeScenario.realWorldAnalogyAr}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setIsAutoSyncTopology(!isAutoSyncTopology)}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
+                  isAutoSyncTopology
+                    ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
+                    : 'bg-white/[0.03] text-slate-500 border-white/[0.06]'
+                }`}
+              >
+                <ArrowRightLeft className="w-3 h-3" />
+                <span>{isEn ? (isAutoSyncTopology ? 'Auto topology' : 'Manual topo') : (isAutoSyncTopology ? 'طوبولوجيا تلقائية' : 'طوبولوجيا يدوية')}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Topology briefing + chips */}
+          <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-3 space-y-2.5">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <Boxes className="w-3.5 h-3.5 text-indigo-300" />
+                  <span className="text-xs font-bold text-indigo-100">
+                    {isEn && activeTopology.titleEn ? activeTopology.titleEn : activeTopology.titleAr}
+                  </span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-500/30">
+                    {isEn ? (activeTopology.badgeEn || 'Topology') : activeTopology.badgeAr}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  {isEn && activeTopology.descriptionEn ? activeTopology.descriptionEn : activeTopology.descriptionAr}
+                </p>
+              </div>
+            </div>
+            {activeTopology.featuresAr && activeTopology.featuresAr.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {activeTopology.featuresAr.map((f, i) => (
+                  <span key={i} className="px-2 py-0.5 rounded-md text-[10px] bg-slate-950/60 text-slate-300 border border-white/[0.06]">
+                    {f}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-thin">
+              {(trackTopologies.length ? trackTopologies : NETWORK_TOPOLOGIES).map(topo => {
+                const isSelected = activeTopology.id === topo.id;
+                return (
+                  <button
+                    key={topo.id}
+                    onClick={() => handleTopologyChange(topo.id)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold shrink-0 border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-100'
+                        : 'bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span className={`w-5 h-5 rounded-md flex items-center justify-center ${isSelected ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
+                      {topologyIcons[topo.iconName] || <Network className="w-3.5 h-3.5" />}
+                    </span>
+                    <span className="whitespace-nowrap">
+                      {isEn && topo.titleEn ? topo.titleEn.split('(')[0].trim() : topo.titleAr.split('(')[0].trim()}
+                    </span>
                   </button>
                 );
               })}
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Primary Network Topology Canvas */}
-      <NetworkCanvas
-        nodes={activeTopology.nodes}
-        links={activeTopology.links}
-        zones={activeTopology.zones}
-        activeTopology={activeTopology}
-        currentStep={currentStep}
-        activeScenarioTitle={isEn && activeScenario.titleEn ? activeScenario.titleEn : activeScenario.titleAr}
-        onNodeClick={(node) => {
-          setSelectedNode(node);
-          setIsTablesModalOpen(true);
-        }}
-        selectedNodeId={selectedNode?.id}
-        isPlaying={isPlaying}
-        lang={lang}
-      />
+          <NetworkCanvas
+            nodes={activeTopology.nodes}
+            links={activeTopology.links}
+            zones={activeTopology.zones}
+            activeTopology={activeTopology}
+            currentStep={currentStep}
+            activeScenarioTitle={isEn && activeScenario.titleEn ? activeScenario.titleEn : activeScenario.titleAr}
+            onNodeClick={(node) => {
+              setSelectedNode(node);
+              setIsTablesModalOpen(true);
+            }}
+            selectedNodeId={selectedNode?.id}
+            isPlaying={isPlaying}
+            lang={lang}
+          />
 
-      {/* Simulation Timeline Controls Bar */}
-      <div className="p-3.5 bg-slate-900/95 rounded-2xl border border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-3">
-        {/* Playback Buttons */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleReset}
-            title={isEn ? 'Reset to beginning' : 'إعادة من البداية'}
-            className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={handleStepBackward}
-            disabled={currentStepIndex === 0}
-            title={isEn ? 'Previous step' : 'الخطوة السابقة'}
-            className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 disabled:opacity-30 text-slate-300 border border-slate-800 transition-colors"
-          >
-            <SkipBack className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-all"
-          >
-            {isPlaying ? (
-              <>
-                <Pause className="w-4 h-4" />
-                <span>{isEn ? 'Pause' : 'إيقاف مؤقت'}</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4 fill-slate-950" />
-                <span>{isEn ? 'Play Simulation' : 'تشغيل المحاكاة'}</span>
-              </>
-            )}
-          </button>
-
-          <button
-            onClick={handleStepForward}
-            disabled={currentStepIndex === activeScenario.steps.length - 1}
-            title={isEn ? 'Next step' : 'الخطوة التالية'}
-            className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 disabled:opacity-30 text-slate-300 border border-slate-800 transition-colors"
-          >
-            <SkipForward className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Step Progression Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto max-w-full py-1">
-          {activeScenario.steps.map((step, idx) => (
-            <button
-              key={step.id}
-              onClick={() => {
-                setCurrentStepIndex(idx);
-                setIsPlaying(false);
-              }}
-              className={`h-8 min-w-[32px] px-2.5 rounded-xl text-xs font-bold font-mono transition-all flex items-center justify-center gap-1.5 ${
-                currentStepIndex === idx
-                  ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-400/25 font-black ring-2 ring-amber-400/40'
-                  : currentStepIndex > idx
-                    ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-600/40'
-                    : 'bg-slate-950 text-slate-500 border border-slate-800 hover:text-slate-300'
-              }`}
-              title={isEn && step.stageTitleEn ? step.stageTitleEn : step.stageTitleAr}
-            >
-              <span>{idx + 1}</span>
-              {currentStepIndex === idx && (
-                <span className="text-[10px] hidden sm:inline-block font-sans font-normal">
-                  ({step.layer})
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Speed Controls */}
-        <div className="flex items-center gap-1.5 text-xs text-slate-400">
-          <span>{isEn ? 'Speed:' : 'سرعة المحاكاة:'}</span>
-          {[0.5, 1, 2].map((s) => (
-            <button
-              key={s}
-              onClick={() => setPlaybackSpeed(s)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                playbackSpeed === s
-                  ? 'bg-slate-800 text-amber-300 border border-slate-700 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              {s}x
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Cisco Live Terminal Output Window */}
-      {currentStep && (
-        <div className="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-xl dir-ltr text-left">
-          <div className="bg-slate-900/90 px-4 py-2 border-b border-slate-800 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-emerald-400" />
-              <span className="text-xs font-mono text-slate-200 font-bold">
-                Cisco IOS Execution Terminal — [Node: {currentStep.activeNodeId.toUpperCase()}]
-              </span>
+          {/* Labeled step rail + playback */}
+          <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-3">
+            <div className={`flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin ${lang === 'ar' ? 'justify-end' : 'justify-start'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+              {activeScenario.steps.map((step, idx) => {
+                const label = isEn
+                  ? (step.stageTitleEn || step.titleEn || `Step ${idx + 1}`)
+                  : (step.stageTitleAr || step.titleAr || `خطوة ${idx + 1}`);
+                const short = label.replace(/^\d+[\.\):\-]\s*/, '').slice(0, 28);
+                return (
+                  <button
+                    key={step.id ?? idx}
+                    onClick={() => {
+                      setCurrentStepIndex(idx);
+                      setIsPlaying(false);
+                    }}
+                    className={`group flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-bold shrink-0 border transition-all cursor-pointer ${
+                      lang === 'ar' ? 'flex-row-reverse' : ''
+                    } ${
+                      currentStepIndex === idx
+                        ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md'
+                        : currentStepIndex > idx
+                          ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                          : 'bg-white/[0.02] text-slate-400 border-white/[0.06] hover:text-slate-200'
+                    }`}
+                    title={label}
+                  >
+                    <span className={`w-5 h-5 rounded-lg flex items-center justify-center font-mono text-[10px] ${
+                      currentStepIndex === idx ? 'bg-slate-950 text-amber-400' : 'bg-slate-800 text-slate-400'
+                    }`}>
+                      {idx + 1}
+                    </span>
+                    <span className="text-[11px] font-sans font-medium whitespace-nowrap max-w-[120px] truncate hidden sm:inline">
+                      {short}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-            <span className="text-[10px] font-mono text-slate-400">
-              Interactive Packet Dissection
-            </span>
+
+            <div className="flex flex-row items-center justify-between gap-3" dir="ltr">
+              <div className={`flex items-center gap-1 p-1 rounded-2xl bg-slate-950/60 border border-white/[0.06] ${lang === 'ar' ? 'order-1' : 'order-2'}`}>
+                <button onClick={handleReset} title={isEn ? 'Reset' : 'إعادة'} className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.06] cursor-pointer">
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+                <button onClick={handleStepBackward} disabled={currentStepIndex === 0} title={isEn ? 'Previous' : 'السابق'} className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.06] disabled:opacity-30 cursor-pointer">
+                  <SkipBack className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  {isPlaying ? (
+                    <><Pause className="w-4 h-4" /><span>{isEn ? 'Pause' : 'إيقاف'}</span></>
+                  ) : (
+                    <><Play className="w-4 h-4 fill-current" /><span>{isEn ? 'Play' : 'تشغيل'}</span></>
+                  )}
+                </button>
+                <button onClick={handleStepForward} disabled={currentStepIndex === activeScenario.steps.length - 1} title={isEn ? 'Next' : 'التالي'} className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.06] disabled:opacity-30 cursor-pointer">
+                  <SkipForward className="w-4 h-4" />
+                </button>
+              </div>
+              <div className={`flex items-center gap-1 text-[10px] text-slate-500 ${lang === 'ar' ? 'order-2' : 'order-1'}`}>
+                {[0.5, 1, 2].map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setPlaybackSpeed(s)}
+                    className={`px-2 py-1 rounded-lg font-mono font-bold cursor-pointer ${
+                      playbackSpeed === s ? 'bg-slate-800 text-amber-300' : 'hover:text-slate-300'
+                    }`}
+                  >
+                    {s}x
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <pre className="p-3.5 text-xs font-mono text-emerald-400 bg-slate-950 overflow-x-auto whitespace-pre leading-relaxed selection:bg-emerald-900">
-            {getCiscoCliSnippet()}
-          </pre>
+
+          {/* Learning triad for current step */}
+          {currentStep && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-1.5">
+                <div className="text-[10px] font-bold text-amber-400 uppercase tracking-wide">
+                  {isEn ? 'What is happening' : 'ماذا يحدث الآن'}
+                </div>
+                <div className="text-xs font-bold text-white leading-snug">
+                  {isEn
+                    ? (currentStep.stageTitleEn || currentStep.titleEn || `Step ${currentStepIndex + 1}`)
+                    : (currentStep.stageTitleAr || currentStep.titleAr || `الخطوة ${currentStepIndex + 1}`)}
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  {(() => {
+                    const ex = currentStep.explanation;
+                    if (typeof ex === 'string') return ex;
+                    if (ex && typeof ex === 'object') {
+                      return isEn
+                        ? (ex.whatIsHappeningEn || ex.whatIsHappening || '')
+                        : (ex.whatIsHappening || '');
+                    }
+                    return isEn
+                      ? (currentStep.stageDescriptionEn || currentStep.actionAr || '')
+                      : (currentStep.stageDescriptionAr || currentStep.actionAr || '');
+                  })()}
+                </p>
+              </div>
+              <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-1.5">
+                <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-wide">
+                  {isEn ? 'Why / Cisco term' : 'لماذا / مصطلح سيسكو'}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {currentStep.layer && (
+                    <span className="px-1.5 py-0.5 rounded bg-slate-950 text-cyan-300 border border-cyan-500/30 text-[10px] font-mono font-bold">
+                      {currentStep.layer}
+                    </span>
+                  )}
+                  {currentStep.highlightEvent && (
+                    <span className="px-1.5 py-0.5 rounded bg-slate-950 text-amber-300 border border-amber-500/30 text-[10px] font-mono">
+                      {currentStep.highlightEvent}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  {(() => {
+                    const ex = currentStep.explanation;
+                    if (ex && typeof ex === 'object') {
+                      return isEn
+                        ? (ex.whyItHappensEn || ex.whyItHappens || ex.keyObservationEn || ex.keyObservation || '')
+                        : (ex.whyItHappens || ex.keyObservation || '');
+                    }
+                    return currentStep.technicalDetailsAr || (isEn ? 'Inspect L2/L3 headers below.' : 'افحص ترويسات L2/L3 أدناه.');
+                  })()}
+                </p>
+              </div>
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 space-y-1.5 dir-ltr text-left">
+                <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wide">
+                  Headers @ {currentStep.activeNodeId}
+                </div>
+                <div className="space-y-1 font-mono text-[10px] text-slate-300">
+                  <div className="flex justify-between gap-2"><span className="text-slate-500">Src MAC</span><span className="truncate">{currentStep.headers?.l2?.srcMac || '—'}</span></div>
+                  <div className="flex justify-between gap-2"><span className="text-slate-500">Dst MAC</span><span className="truncate">{currentStep.headers?.l2?.destMac || '—'}</span></div>
+                  <div className="flex justify-between gap-2"><span className="text-slate-500">Src IP</span><span>{currentStep.headers?.l3?.srcIp || '—'}</span></div>
+                  <div className="flex justify-between gap-2"><span className="text-slate-500">Dst IP</span><span>{currentStep.headers?.l3?.destIp || '—'}</span></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentStep && (
+            <div className="bg-slate-950 rounded-2xl border border-white/[0.06] overflow-hidden dir-ltr text-left">
+              <div className="bg-white/[0.02] px-3 py-1.5 border-b border-white/[0.06] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-xs font-mono text-slate-300 font-bold">
+                    Cisco IOS — {currentStep.activeNodeId.toUpperCase()}
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-slate-500">Live CLI</span>
+              </div>
+              <pre className="p-3 text-xs font-mono text-emerald-400 overflow-x-auto whitespace-pre leading-relaxed">
+                {getCiscoCliSnippet()}
+              </pre>
+            </div>
+          )}
+
+          <PacketInspector currentStep={currentStep} scenarioId={activeScenario.id} lang={lang} />
         </div>
-      )}
+      </div>
 
-      {/* Packet Inspector Card */}
-      <PacketInspector currentStep={currentStep} lang={lang} />
-
-      {/* Live Memory Tables Modal */}
       <LiveTablesModal
         isOpen={isTablesModalOpen}
         onClose={() => setIsTablesModalOpen(false)}

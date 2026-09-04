@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Zap, Terminal, Activity, X } from 'lucide-react';
-import { SLIDES_DATA } from './data/slidesData';
+import { Terminal, Activity, X } from 'lucide-react';
+import { TEACHING_SLIDES } from './components/SlideViewer';
 import { SlideViewer } from './components/SlideViewer';
 import { InteractiveLab } from './components/InteractiveLab';
 import { QuizSection } from './components/QuizSection';
@@ -99,17 +99,16 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (currentMode !== 'slides') return;
+      const max = TEACHING_SLIDES.length - 1;
       if (e.key === 'ArrowLeft') {
         if (lang === 'ar') {
-          if (currentSlideIndex < SLIDES_DATA.length - 1) {
+          if (currentSlideIndex < max) {
             setCurrentSlideIndex(prev => prev + 1);
             playNetworkTone('packet');
           }
-        } else {
-          if (currentSlideIndex > 0) {
-            setCurrentSlideIndex(prev => prev - 1);
-            playNetworkTone('packet');
-          }
+        } else if (currentSlideIndex > 0) {
+          setCurrentSlideIndex(prev => prev - 1);
+          playNetworkTone('packet');
         }
       } else if (e.key === 'ArrowRight') {
         if (lang === 'ar') {
@@ -117,11 +116,9 @@ export default function App() {
             setCurrentSlideIndex(prev => prev - 1);
             playNetworkTone('packet');
           }
-        } else {
-          if (currentSlideIndex < SLIDES_DATA.length - 1) {
-            setCurrentSlideIndex(prev => prev + 1);
-            playNetworkTone('packet');
-          }
+        } else if (currentSlideIndex < max) {
+          setCurrentSlideIndex(prev => prev + 1);
+          playNetworkTone('packet');
         }
       }
     };
@@ -225,55 +222,23 @@ export default function App() {
             )}
 
             {currentMode === 'reallife' && (
-              <RealLifeNetwork lang={lang} onNavigateToLab={handleJumpToLab} />
+              <RealLifeNetwork lang={lang} userTrack={userProfile.track} onNavigateToLab={handleJumpToLab} />
             )}
 
             {currentMode === 'lab' && (
-              <InteractiveLab initialScenarioId={activeLabScenarioId} lang={lang} />
+              <InteractiveLab initialScenarioId={activeLabScenarioId} lang={lang} userTrack={userProfile.track} />
             )}
 
             {currentMode === 'slides' && (
-              <div className="space-y-4">
-                <div className="p-2.5 rounded-3xl bg-slate-900/90 border border-white/[0.08] shadow-xl backdrop-blur-xl flex items-center gap-2 overflow-x-auto">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-bold shrink-0">
-                    <Zap className="w-3.5 h-3.5" />
-                    <span>{lang === 'ar' ? 'فهرس الشرائح' : 'Slide Deck'}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
-                    {SLIDES_DATA.map((s, idx) => (
-                      <button
-                        key={s.id}
-                        onClick={() => {
-                          setCurrentSlideIndex(idx);
-                          playNetworkTone('packet');
-                        }}
-                        className={`px-3.5 py-1.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 shrink-0 cursor-pointer ${
-                          currentSlideIndex === idx
-                            ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-black'
-                            : 'bg-slate-950/70 text-slate-300 hover:text-white hover:bg-white/[0.06] border border-white/[0.05]'
-                        }`}
-                      >
-                        <span className={`w-5 h-5 rounded-full flex items-center justify-center font-mono text-[10px] ${
-                          currentSlideIndex === idx
-                            ? 'bg-slate-950 text-amber-400 font-bold'
-                            : 'bg-white/[0.05] text-slate-400'
-                        }`}>
-                          {s.number}
-                        </span>
-                        <span>{lang === 'ar' ? s.titleAr.split(':')[0] : s.titleEn.split(':')[0]}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <SlideViewer
-                  currentSlideIndex={currentSlideIndex}
-                  onSlideChange={(newIdx) => {
-                    setCurrentSlideIndex(newIdx);
-                    playNetworkTone('packet');
-                  }}
-                  lang={lang}
-                />
-              </div>
+              <SlideViewer
+                currentSlideIndex={currentSlideIndex}
+                onSlideChange={(newIdx) => {
+                  setCurrentSlideIndex(newIdx);
+                  playNetworkTone('packet');
+                }}
+                lang={lang}
+                onNavigateToLab={handleJumpToLab}
+              />
             )}
 
             {currentMode === 'protocols' && <ProtocolStateMachine lang={lang} />}
@@ -335,6 +300,7 @@ export default function App() {
         onUpdateUser={handleUpdateUser}
         onLogout={handleLogout}
         onSwitchTrack={handleSwitchTrack}
+        lang={lang}
       />
     </div>
   );
